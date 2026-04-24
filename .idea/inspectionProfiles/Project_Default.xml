@@ -1,0 +1,23 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="ignoredPackages">
+        <list>
+          <option value="mlflow" />
+          <option value="pandas" />
+          <option value="numpy" />
+          <option value="scikit-learn" />
+          <option value="matplotlib" />
+          <option value="seaborn" />
+          <option value="notebook" />
+          <option value="tqdm" />
+          <option value="types-PyYAML" />
+          <option value="PyYAML" />
+          <option value="fastapi" />
+          <option value="uvicorn" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
