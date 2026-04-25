@@ -1,0 +1,82 @@
+[
+  {
+    "query": "Who invented the telephone and in what year?",
+    "content": "where",
+    "source": "Work (physics)",
+    "topic_area": "physics",
+    "chunk_id": 1380,
+    "retrieval_rank": 1,
+    "score": 1.1460165977478027,
+    "metadata": {
+      "source": "Work (physics)",
+      "loader": "wikipedia_api",
+      "topic_area": "physics",
+      "topic_title": "Work (physics)",
+      "chunk_id": 1380
+    }
+  },
+  {
+    "query": "Who invented the telephone and in what year?",
+    "content": ". In 1803 English polymath Thomas Young described the famous double-slit experiment. This experiment played a major role in the general acceptance of the wave theory of light.",
+    "source": "Quantum mechanics",
+    "topic_area": "physics",
+    "chunk_id": 1815,
+    "retrieval_rank": 2,
+    "score": 1.1619459390640259,
+    "metadata": {
+      "source": "Quantum mechanics",
+      "loader": "wikipedia_api",
+      "topic_area": "physics",
+      "topic_title": "Quantum mechanics",
+      "chunk_id": 1815
+    }
+  },
+  {
+    "query": "Who invented the telephone and in what year?",
+    "content": "According to American philosopher Richard J. Blackwell, Dutch scientist Christiaan Huygens had worked out his own, concise version of the law in 1656. It was not published until 1703, eight years after his death, in the opening paragraph of De Motu Corporum ex Percussione.",
+    "source": "Newton's laws of motion",
+    "topic_area": "physics",
+    "chunk_id": 548,
+    "retrieval_rank": 3,
+    "score": 1.1651997566223145,
+    "metadata": {
+      "source": "Newton's laws of motion",
+      "loader": "wikipedia_api",
+      "topic_area": "physics",
+      "topic_title": "Newton's laws of motion",
+      "chunk_id": 548
+    }
+  },
+  {
+    "query": "Who invented the telephone and in what year?",
+    "content": "The French philosopher René Descartes introduced the concept of inertia by way of his \"laws of nature\" in The World (Traité du monde et de la lumière) written 1629–1633. However, The World purported a heliocentric worldview, and in 1633 this view had given rise a great conflict between Galileo Galilei and the Roman Catholic Inquisition. Descartes knew about this controversy and did not wish to get involved. The World was not published until 1664, ten years after his death.",
+    "source": "Newton's laws of motion",
+    "topic_area": "physics",
+    "chunk_id": 542,
+    "retrieval_rank": 4,
+    "score": 1.1727690696716309,
+    "metadata": {
+      "source": "Newton's laws of motion",
+      "loader": "wikipedia_api",
+      "topic_area": "physics",
+      "topic_title": "Newton's laws of motion",
+      "chunk_id": 542
+    }
+  },
+  {
+    "query": "Who invented the telephone and in what year?",
+    "content": ". Building on de Broglie's approach, modern quantum mechanics was born in 1925, when the German physicists Werner Heisenberg, Max Born, and Pascual Jordan developed matrix mechanics and the Austrian physicist Erwin Schrödinger invented wave mechanics. Born introduced the probabilistic interpretation of Schrödinger's wave function in July 1926. Thus, the entire field of quantum physics emerged, leading to its wider acceptance at the Fifth Solvay Conference in 1927.",
+    "source": "Quantum mechanics",
+    "topic_area": "physics",
+    "chunk_id": 1829,
+    "retrieval_rank": 5,
+    "score": 1.1804165840148926,
+    "metadata": {
+      "source": "Quantum mechanics",
+      "loader": "wikipedia_api",
+      "topic_area": "physics",
+      "topic_title": "Quantum mechanics",
+      "chunk_id": 1829
+    }
+  }
+]
