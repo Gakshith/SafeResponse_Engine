@@ -1,82 +1,97 @@
-[
-  {
-    "query": "Who invented the telephone and in what year?",
-    "content": "where",
-    "source": "Work (physics)",
-    "topic_area": "physics",
-    "chunk_id": 1380,
-    "retrieval_rank": 1,
-    "score": 1.1460165977478027,
-    "metadata": {
-      "source": "Work (physics)",
-      "loader": "wikipedia_api",
-      "topic_area": "physics",
-      "topic_title": "Work (physics)",
-      "chunk_id": 1380
-    }
+{
+  "query": "Who invented the telephone and in what year?",
+  "embedding_model": "BAAI/bge-m3",
+  "top_k": 5,
+  "score_stats": {
+    "min": 1.069143,
+    "max": 1.148053,
+    "mean": 1.091995
   },
-  {
-    "query": "Who invented the telephone and in what year?",
-    "content": ". In 1803 English polymath Thomas Young described the famous double-slit experiment. This experiment played a major role in the general acceptance of the wave theory of light.",
-    "source": "Quantum mechanics",
-    "topic_area": "physics",
-    "chunk_id": 1815,
-    "retrieval_rank": 2,
-    "score": 1.1619459390640259,
-    "metadata": {
-      "source": "Quantum mechanics",
-      "loader": "wikipedia_api",
-      "topic_area": "physics",
-      "topic_title": "Quantum mechanics",
-      "chunk_id": 1815
+  "chunks": [
+    {
+      "content": "History",
+      "source": "Autism",
+      "chunk_id": 264,
+      "char_count": 7,
+      "content_hash": "0e76960093379060",
+      "retrieval_rank": 1,
+      "score": 1.069143,
+      "metadata": {
+        "source": "Autism",
+        "loader": "wikipedia_huggingface",
+        "topic_area": "general",
+        "chunk_id": 264,
+        "char_count": 7,
+        "content_hash": "0e76960093379060"
+      }
+    },
+    {
+      "content": "History",
+      "source": "International Atomic Time",
+      "chunk_id": 1478,
+      "char_count": 7,
+      "content_hash": "0e76960093379060",
+      "retrieval_rank": 2,
+      "score": 1.069143,
+      "metadata": {
+        "source": "International Atomic Time",
+        "loader": "wikipedia_huggingface",
+        "topic_area": "general",
+        "chunk_id": 1478,
+        "char_count": 7,
+        "content_hash": "0e76960093379060"
+      }
+    },
+    {
+      "content": "Communication",
+      "source": "Autism",
+      "chunk_id": 159,
+      "char_count": 13,
+      "content_hash": "3981a2b9c1ef7fce",
+      "retrieval_rank": 3,
+      "score": 1.08411,
+      "metadata": {
+        "source": "Autism",
+        "loader": "wikipedia_huggingface",
+        "topic_area": "general",
+        "chunk_id": 159,
+        "char_count": 13,
+        "content_hash": "3981a2b9c1ef7fce"
+      }
+    },
+    {
+      "content": "Aristotle (;  Aristotélēs, ; 384–322 BC) was a Greek philosopher and polymath during the Classical period in Ancient Greece. Taught by Plato, he was the founder of the Lyceum, the Peripatetic school of philosophy, and the Aristotelian tradition. His writings cover many subjects including physics, biology, zoology, metaphysics, logic, ethics, aesthetics, poetry, theatre, music, rhetoric, psychology, linguistics, economics, politics, meteorology, geology and government",
+      "source": "Aristotle",
+      "chunk_id": 1019,
+      "char_count": 471,
+      "content_hash": "1747e8f538ec291e",
+      "retrieval_rank": 4,
+      "score": 1.089525,
+      "metadata": {
+        "source": "Aristotle",
+        "loader": "wikipedia_huggingface",
+        "topic_area": "general",
+        "chunk_id": 1019,
+        "char_count": 471,
+        "content_hash": "1747e8f538ec291e"
+      }
+    },
+    {
+      "content": "The award was originally sculpted by George Stanley from a design sketch by Cedric Gibbons. AMPAS first presented it in 1929 at a private dinner hosted by Douglas Fairbanks in The Hollywood Roosevelt Hotel in what would become known as the 1st Academy Awards. The Academy Awards ceremony was first broadcast by radio in 1930 and was televised for the first time in 1953. It is the oldest worldwide entertainment awards ceremony and is now televised live worldwide",
+      "source": "Academy Awards",
+      "chunk_id": 1269,
+      "char_count": 463,
+      "content_hash": "187f9d088bca7057",
+      "retrieval_rank": 5,
+      "score": 1.148053,
+      "metadata": {
+        "source": "Academy Awards",
+        "loader": "wikipedia_huggingface",
+        "topic_area": "general",
+        "chunk_id": 1269,
+        "char_count": 463,
+        "content_hash": "187f9d088bca7057"
+      }
     }
-  },
-  {
-    "query": "Who invented the telephone and in what year?",
-    "content": "According to American philosopher Richard J. Blackwell, Dutch scientist Christiaan Huygens had worked out his own, concise version of the law in 1656. It was not published until 1703, eight years after his death, in the opening paragraph of De Motu Corporum ex Percussione.",
-    "source": "Newton's laws of motion",
-    "topic_area": "physics",
-    "chunk_id": 548,
-    "retrieval_rank": 3,
-    "score": 1.1651997566223145,
-    "metadata": {
-      "source": "Newton's laws of motion",
-      "loader": "wikipedia_api",
-      "topic_area": "physics",
-      "topic_title": "Newton's laws of motion",
-      "chunk_id": 548
-    }
-  },
-  {
-    "query": "Who invented the telephone and in what year?",
-    "content": "The French philosopher René Descartes introduced the concept of inertia by way of his \"laws of nature\" in The World (Traité du monde et de la lumière) written 1629–1633. However, The World purported a heliocentric worldview, and in 1633 this view had given rise a great conflict between Galileo Galilei and the Roman Catholic Inquisition. Descartes knew about this controversy and did not wish to get involved. The World was not published until 1664, ten years after his death.",
-    "source": "Newton's laws of motion",
-    "topic_area": "physics",
-    "chunk_id": 542,
-    "retrieval_rank": 4,
-    "score": 1.1727690696716309,
-    "metadata": {
-      "source": "Newton's laws of motion",
-      "loader": "wikipedia_api",
-      "topic_area": "physics",
-      "topic_title": "Newton's laws of motion",
-      "chunk_id": 542
-    }
-  },
-  {
-    "query": "Who invented the telephone and in what year?",
-    "content": ". Building on de Broglie's approach, modern quantum mechanics was born in 1925, when the German physicists Werner Heisenberg, Max Born, and Pascual Jordan developed matrix mechanics and the Austrian physicist Erwin Schrödinger invented wave mechanics. Born introduced the probabilistic interpretation of Schrödinger's wave function in July 1926. Thus, the entire field of quantum physics emerged, leading to its wider acceptance at the Fifth Solvay Conference in 1927.",
-    "source": "Quantum mechanics",
-    "topic_area": "physics",
-    "chunk_id": 1829,
-    "retrieval_rank": 5,
-    "score": 1.1804165840148926,
-    "metadata": {
-      "source": "Quantum mechanics",
-      "loader": "wikipedia_api",
-      "topic_area": "physics",
-      "topic_title": "Quantum mechanics",
-      "chunk_id": 1829
-    }
-  }
-]
+  ]
+}

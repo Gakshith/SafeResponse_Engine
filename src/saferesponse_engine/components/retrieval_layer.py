@@ -1,42 +1,33 @@
-import json
-from pathlib import Path
-from typing import Any
-
-import requests
-from tqdm import tqdm
-
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
+from datasets import load_dataset
+from collections import Counter
+from dataclasses import dataclass
+from pathlib import Path
+import hashlib
+import json
+import math
+import re
+from typing import Any
+import requests
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from langchain_community.vectorstores import FAISS
-
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from tqdm import tqdm
 from src.saferesponse_engine import logger
 from src.saferesponse_engine.entity.config_entity import RetrievalConfig
-
+from src.saferesponse_engine.constants import CONFIG_FILE_PATH, PARAM_FILE_PATH, SCHEMA_FILE_PATH
+from src.saferesponse_engine.utils.common import create_directories, read_yaml
 
 class RetrievalLayer:
-    PHYSICS_TOPICS = [
-        "Physics",
-        "Classical mechanics",
-        "Newton's laws of motion",
-        "Momentum",
-        "Impulse (physics)",
-        "Force",
-        "Work (physics)",
-        "Energy",
-        "Quantum mechanics",
-        "Relativity",
-    ]
 
     def __init__(self, config: RetrievalConfig):
         self.config = config
-        self._vectorstore: FAISS | None = None
-
+        logger.info("[Stage 2] Loading BGE-M3 embedding model: %s", config.embedding_model)
         self.embeddings = HuggingFaceEmbeddings(
-            model_name=self.config.embedding_model,
-            encode_kwargs={"normalize_embeddings": True},
+            model_name=config.embedding_model,          # "BAAI/bge-m3"
+            encode_kwargs={"normalize_embeddings": True}
         )
-
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.config.chunk_size,
             chunk_overlap=self.config.chunk_overlap,
@@ -45,184 +36,121 @@ class RetrievalLayer:
         )
 
     def build_index(self) -> FAISS:
-        index_dir = self.config.faiss_index_path
-        index_marker = index_dir / "index.faiss"
-        metadata_marker = index_dir / "corpus_meta.json"
-
-        expected_topics = self.PHYSICS_TOPICS[: min(self.config.num_articles, len(self.PHYSICS_TOPICS))]
-        expected_meta = {
-            "topics": expected_topics,
-            "embedding_model": self.config.embedding_model,
-            "chunk_size": self.config.chunk_size,
-            "chunk_overlap": self.config.chunk_overlap,
+        index_dir     = Path(self.config.faiss_index_path)
+        index_marker  = index_dir / "index.faiss"
+        metadata_path = index_dir / "index_metadata.json"
+        expected_metadata = {
+            "corpus":        "wikipedia_20220301_en",
+            "embedding":     "bge_m3_1024dim",
+            "num_articles":  self.config.num_articles,
         }
 
-        if index_marker.exists() and metadata_marker.exists():
-            try:
-                saved_meta = json.loads(metadata_marker.read_text(encoding="utf-8"))
-                if saved_meta == expected_meta:
-                    logger.info("[Stage 2] Loading cached FAISS index from %s", index_dir)
-                    self._vectorstore = FAISS.load_local(
-                        str(index_dir),
-                        self.embeddings,
-                        allow_dangerous_deserialization=True,
-                    )
-                    return self._vectorstore
-            except Exception as exc:
-                logger.warning("[Stage 2] Failed to read cached metadata: %s", exc)
+        if index_marker.exists() and metadata_path.exists():
+            stored_metadata = json.loads(
+                metadata_path.read_text(encoding="utf-8")
+            )
+            if stored_metadata == expected_metadata:
+                logger.info(
+                    "[Stage 2] Loading existing FAISS index from %s", index_dir
+                )
+                return FAISS.load_local(
+                    str(index_dir),
+                    self.embeddings,
+                    allow_dangerous_deserialization=True,
+                )
 
-        logger.info("[Stage 2] Building new FAISS index")
-        raw_docs = self._load_wikipedia_documents(expected_topics)
+        raw_docs = self._load_wikipedia_documents()
         if not raw_docs:
-            raise RuntimeError("No Wikipedia documents could be loaded.")
-
-        logger.info("[Stage 2] Loaded %d source documents", len(raw_docs))
-
+            raise RuntimeError("Unable to build the Wikipedia retrieval corpus.")
         chunks = self.splitter.split_documents(raw_docs)
-        for idx, chunk in enumerate(chunks):
-            chunk.metadata["chunk_id"] = idx
-
-        logger.info("[Stage 2] Split into %d chunks", len(chunks))
-        logger.info("[Stage 2] Creating FAISS vector store")
-
-        self._vectorstore = FAISS.from_documents(chunks, self.embeddings)
-
-        index_dir.mkdir(parents=True, exist_ok=True)
-        self._vectorstore.save_local(str(index_dir))
-        metadata_marker.write_text(
-            json.dumps(expected_meta, indent=2, ensure_ascii=False),
-            encoding="utf-8",
+        for chunk_id, chunk in enumerate(chunks):
+            chunk.metadata["chunk_id"]     = chunk_id
+            chunk.metadata["char_count"]   = len(chunk.page_content)
+            chunk.metadata["content_hash"] = hashlib.sha256(
+                chunk.page_content.encode()
+            ).hexdigest()[:16]
+        logger.info(
+            "[Stage 2] Building FAISS vector store with %s chunks", len(chunks)
         )
-
+        vectorstore = FAISS.from_documents(chunks, self.embeddings)
+        index_dir.mkdir(parents=True, exist_ok=True)
+        vectorstore.save_local(str(index_dir))
+        metadata_path.write_text(
+            json.dumps(expected_metadata, indent=2), encoding="utf-8"
+        )
         logger.info("[Stage 2] FAISS index saved to %s", index_dir)
-        return self._vectorstore
+        return vectorstore
 
     def retrieve(self) -> list[dict[str, Any]]:
         vectorstore = self.build_index()
         query = self._read_query()
-
         logger.info("[Stage 2] Query: %s", query)
-
         results = vectorstore.similarity_search_with_score(
-            query=query,
-            k=self.config.top_k,
+            query, k=self.config.top_k
         )
-
         retrieved_chunks: list[dict[str, Any]] = []
         for rank, (doc, score) in enumerate(results, start=1):
-            retrieved_chunks.append(
-                {
-                    "query": query,
-                    "content": doc.page_content,
-                    "source": doc.metadata.get("source", "unknown"),
-                    "topic_area": doc.metadata.get("topic_area", "physics"),
-                    "chunk_id": doc.metadata.get("chunk_id"),
-                    "retrieval_rank": rank,
-                    "score": float(score),
-                    "metadata": doc.metadata,
-                }
-            )
-
+            retrieved_chunks.append({
+                "content":        doc.page_content,
+                "source":         doc.metadata.get("source", "unknown"),
+                "chunk_id":       doc.metadata.get("chunk_id"),
+                "char_count":     doc.metadata.get("char_count"),
+                "content_hash":   doc.metadata.get("content_hash"),
+                "retrieval_rank": rank,
+                "score":          round(float(score), 6),
+                "metadata":       doc.metadata,
+            })
+        scores = [c["score"] for c in retrieved_chunks]
+        score_stats = {
+            "min":  round(min(scores), 6),
+            "max":  round(max(scores), 6),
+            "mean": round(sum(scores) / len(scores), 6),
+        }
+        output = {
+            "query":            query,
+            "embedding_model":  self.config.embedding_model,
+            "top_k":            self.config.top_k,
+            "score_stats":      score_stats,
+            "chunks":           retrieved_chunks,
+        }
         self.config.retrieval_output_path.parent.mkdir(parents=True, exist_ok=True)
         self.config.retrieval_output_path.write_text(
-            json.dumps(retrieved_chunks, indent=2, ensure_ascii=False),
+            json.dumps(output, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
-
         logger.info(
-            "[Stage 2] Saved %d retrieved chunks to %s",
+            "[Stage 2] Saved %s chunks to %s | scores: %s",
             len(retrieved_chunks),
             self.config.retrieval_output_path,
+            score_stats,
         )
-
         return retrieved_chunks
 
-    def _load_wikipedia_documents(self, topics: list[str]) -> list[Document]:
-        session = requests.Session()
-        session.headers.update(
-            {
-                "User-Agent": "SafeResponseEngine/1.0 (educational project retrieval pipeline)"
-            }
+    def _load_wikipedia_documents(self) -> list[Document]:
+        logger.info(
+            "[Stage 2] Loading %s Wikipedia articles...", self.config.num_articles
         )
-
-        raw_docs: list[Document] = []
-
-        logger.info("[Stage 2] Fetching %d physics topics from Wikipedia", len(topics))
-
-        for title in tqdm(topics, desc="Fetching Wikipedia topics"):
-            try:
-                summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{title.replace(' ', '_')}"
-                summary_resp = session.get(summary_url, timeout=20)
-                summary_resp.raise_for_status()
-                summary_data = summary_resp.json()
-
-                title_text = (summary_data.get("title") or title).strip()
-                description_text = (summary_data.get("description") or "").strip()
-                summary_text = (summary_data.get("extract") or "").strip()
-
-                extract_resp = session.get(
-                    "https://en.wikipedia.org/w/api.php",
-                    params={
-                        "action": "query",
-                        "format": "json",
-                        "prop": "extracts",
-                        "explaintext": 1,
-                        "titles": title,
-                    },
-                    timeout=20,
-                )
-                extract_resp.raise_for_status()
-                extract_data = extract_resp.json()
-
-                pages = extract_data.get("query", {}).get("pages", {})
-                full_extract = ""
-                for page in pages.values():
-                    full_extract = (page.get("extract") or "").strip()
-                    if full_extract:
-                        break
-
-                page_content_parts = [
-                    title_text,
-                    description_text,
-                    summary_text,
-                    full_extract,
-                ]
-                page_content = "\n\n".join(part for part in page_content_parts if part)
-
-                if not page_content.strip():
-                    logger.warning("[Stage 2] Empty content for topic: %s", title)
-                    continue
-
-                raw_docs.append(
-                    Document(
-                        page_content=page_content,
-                        metadata={
-                            "source": title_text,
-                            "loader": "wikipedia_api",
-                            "topic_area": "physics",
-                            "topic_title": title,
-                        },
-                    )
-                )
-
-            except Exception as exc:
-                logger.warning("[Stage 2] Failed to fetch '%s': %s", title, exc)
-
+        dataset = load_dataset(
+            "wikipedia",
+            "20220301.en",
+            split=f"train[:{self.config.num_articles}]",
+            trust_remote_code=True,
+        )
+        raw_docs = [
+            Document(
+                page_content=article["text"],
+                metadata={
+                    "source":     article["title"],
+                    "loader":     "wikipedia_huggingface",
+                    "topic_area": "general",
+                }
+            )
+            for article in tqdm(dataset, desc="Converting Wikipedia articles")
+        ]
+        logger.info("[Stage 2] Loaded %s Wikipedia articles.", len(raw_docs))
         return raw_docs
-
     def _read_query(self) -> str:
-        raw_text = self.config.query_artifact_path.read_text(encoding="utf-8").strip()
-        if not raw_text:
+        query = self.config.query_artifact_path.read_text(encoding="utf-8").strip()
+        if not query:
             raise ValueError("Query artifact is empty.")
-
-        try:
-            data = json.loads(raw_text)
-            if isinstance(data, dict) and "query" in data:
-                query = str(data["query"]).strip()
-                if not query:
-                    raise ValueError("Query field is empty.")
-                return query
-        except json.JSONDecodeError:
-            pass
-
-        return raw_text
+        return query
