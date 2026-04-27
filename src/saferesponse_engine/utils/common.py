@@ -142,6 +142,11 @@ def load_bin(path: Path) -> Any:
     logger.info(f"Binary file (pickle) loaded from: {path}")
     return data
 
+def read_txt_file(path: Path) -> str:
+    with open(Path(path), "r") as f:
+        value =  f.read()
+    return value
+
 def get_size(path: Path) -> str:
     """
     Get file size in KB.

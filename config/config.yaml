@@ -16,3 +16,25 @@ retrieval_layer:
     chunk_overlap: 100
     num_articles: 15
     min_score_threshold: 0.5
+
+generation_layer:
+  root_dir: artifacts/generation
+  retrieval_artifact_path: artifacts/retrieval/retrieved_chunks.json
+  generation_output_path: artifacts/generation/candidates.json
+  model_name: Qwen/Qwen2.5-0.5B-Instruct
+  finetuned_model_path: null
+  num_candidates: 3
+  primary_temperature: 0.0
+  sample_temperature: 0.7
+  max_new_tokens: 96
+  max_context_length: 1024
+
+trace_collection_layer:
+  root_dir: artifacts/traces
+  generation_artifact_path: artifacts/generation/candidates.json
+  trace_output_path: artifacts/traces/traces.json
+  hidden_states_dir: artifacts/traces/hidden_states
+  model_name: Qwen/Qwen2.5-1.5B-Instruct
+  max_context_length: 2048
+  collect_hidden_states: true
+  num_hidden_layers_to_save: -1

@@ -1,6 +1,11 @@
 from src.saferesponse_engine.utils.common import read_yaml, create_directories
 from src.saferesponse_engine.constants import CONFIG_FILE_PATH, PARAM_FILE_PATH, SCHEMA_FILE_PATH
-from src.saferesponse_engine.entity.config_entity import UserQueryConfig, RetrievalConfig
+from src.saferesponse_engine.entity.config_entity import (
+    UserQueryConfig,
+    RetrievalConfig,
+    GenerationConfig,
+    TraceCollectionConfig,
+)
 from pathlib import Path
 
 class ConfigurationManager:
@@ -41,4 +46,48 @@ class ConfigurationManager:
             chunk_overlap=int(config.chunk_overlap),
             num_articles=int(config.num_articles),
             min_score_threshold=float(config.min_score_threshold),
+        )
+
+    def get_generation_layer_config(self) -> GenerationConfig:
+        config = self.config.generation_layer
+
+        root_dir = Path(config.root_dir)
+        retrieval_artifact_path = Path(config.retrieval_artifact_path)
+        generation_output_path = Path(config.generation_output_path)
+        create_directories([root_dir, generation_output_path.parent])
+
+        return GenerationConfig(
+            root_dir=root_dir,
+            retrieval_artifact_path=retrieval_artifact_path,
+            generation_output_path=generation_output_path,
+            model_name=str(config.model_name),
+            finetuned_model_path=(
+                str(config.finetuned_model_path)
+                if config.finetuned_model_path is not None
+                else None
+            ),
+            num_candidates=int(config.num_candidates),
+            primary_temperature=float(config.primary_temperature),
+            sample_temperature=float(config.sample_temperature),
+            max_new_tokens=int(config.max_new_tokens),
+            max_context_length=int(config.max_context_length),
+        )
+
+    def get_trace_collection_config(self) -> TraceCollectionConfig:
+        config = self.config.trace_collection_layer
+
+        root_dir = Path(config.root_dir)
+        trace_output_path = Path(config.trace_output_path)
+        hidden_states_dir = Path(config.hidden_states_dir)
+        create_directories([root_dir, hidden_states_dir, trace_output_path.parent])
+
+        return TraceCollectionConfig(
+            root_dir=root_dir,
+            generation_artifact_path=Path(config.generation_artifact_path),
+            trace_output_path=trace_output_path,
+            hidden_states_dir=hidden_states_dir,
+            model_name=str(config.model_name),
+            max_context_length=int(config.max_context_length),
+            collect_hidden_states=bool(config.collect_hidden_states),
+            num_hidden_layers_to_save=int(config.num_hidden_layers_to_save),
         )

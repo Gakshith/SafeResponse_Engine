@@ -1,0 +1,15 @@
+{
+  "query": "Who was Alexander the Great?",
+  "context": "[Source 1 - Achilles]:\nThe kings of Epirus claimed to be descended from Achilles through his son, Neoptolemus. Alexander the Great, son of the Epirote princess Olympias, could therefore also claim this descent, and in many ways strove to be like his great ancestor. He is said to have visited the tomb of Achilles at Achilleion while passing Troy. In AD 216 the Roman Emperor Caracalla, while on his way to war against Parthia, emulated Alexander by holding games around Achilles' tumulus.\n\nReception during antiquity\n\n[Source 2 - Aristotle]:\nNear the end of his life, Alexander and Aristotle became estranged over Alexander's relationship with Persia and Persians. A widespread tradition in antiquity suspected Aristotle of playing a role in Alexander's death, but the only evidence of this is an unlikely claim made some six years after the death. Following Alexander's death, anti-Macedonian sentiment in Athens was rekindled\n\n[Source 3 - Aristotle]:\n. He had also learned a great deal about Persian customs and traditions from his teacher. Although his respect for Aristotle was diminished as his travels made it clear that much of Aristotle's geography was clearly wrong, when the old philosopher released his works to the public, Alexander complained \"Thou hast not done well to publish thy acroamatic doctrines; for in what shall I surpass other men if those doctrines wherein I have been trained are to be all men's common property?\"\n\n[Source 4 - Aristotle]:\nLittle is known about his life. Aristotle was born in the city of Stagira in Northern Greece. His father, Nicomachus, died when Aristotle was a child, and he was brought up by a guardian. At seventeen or eighteen years of age he joined Plato's Academy in Athens and remained there until the age of thirty-seven (c. 347 BC). Shortly after Plato died, Aristotle left Athens and, at the request of Philip II of Macedon, tutored Alexander the Great beginning in 343 BC\n\n[Source 5 - Aristotle]:\n. She bore him a daughter, whom they also named Pythias. In 343 BC, Aristotle was invited by Philip II of Macedon to become the tutor to his son Alexander.",
+  "model_name": "sshleifer/tiny-gpt2",
+  "num_candidates": 1,
+  "candidates": [
+    {
+      "response_id": 0,
+      "text": "stairs stairs stairs stairs stairs stairs stairs stairs stairs stairs stairs stairs stairs stairs stairs stairs",
+      "is_primary": true,
+      "temperature": 0.0,
+      "num_tokens": 16
+    }
+  ]
+}

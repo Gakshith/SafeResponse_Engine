@@ -1,96 +1,96 @@
 {
-  "query": "Who invented the telephone and in what year?",
+  "query": "Who was Alexander the Great?",
   "embedding_model": "BAAI/bge-m3",
   "top_k": 5,
   "score_stats": {
-    "min": 1.069143,
-    "max": 1.148053,
-    "mean": 1.091995
+    "min": 1.002234,
+    "max": 1.06053,
+    "mean": 1.036469
   },
   "chunks": [
     {
-      "content": "History",
-      "source": "Autism",
-      "chunk_id": 264,
-      "char_count": 7,
-      "content_hash": "0e76960093379060",
+      "content": "The kings of Epirus claimed to be descended from Achilles through his son, Neoptolemus. Alexander the Great, son of the Epirote princess Olympias, could therefore also claim this descent, and in many ways strove to be like his great ancestor. He is said to have visited the tomb of Achilles at Achilleion while passing Troy. In AD 216 the Roman Emperor Caracalla, while on his way to war against Parthia, emulated Alexander by holding games around Achilles' tumulus.\n\nReception during antiquity",
+      "source": "Achilles",
+      "chunk_id": 718,
+      "char_count": 494,
+      "content_hash": "3d139ed9433f03d9",
       "retrieval_rank": 1,
-      "score": 1.069143,
+      "score": 1.002234,
       "metadata": {
-        "source": "Autism",
+        "source": "Achilles",
         "loader": "wikipedia_huggingface",
         "topic_area": "general",
-        "chunk_id": 264,
-        "char_count": 7,
-        "content_hash": "0e76960093379060"
+        "chunk_id": 718,
+        "char_count": 494,
+        "content_hash": "3d139ed9433f03d9"
       }
     },
     {
-      "content": "History",
-      "source": "International Atomic Time",
-      "chunk_id": 1478,
-      "char_count": 7,
-      "content_hash": "0e76960093379060",
-      "retrieval_rank": 2,
-      "score": 1.069143,
-      "metadata": {
-        "source": "International Atomic Time",
-        "loader": "wikipedia_huggingface",
-        "topic_area": "general",
-        "chunk_id": 1478,
-        "char_count": 7,
-        "content_hash": "0e76960093379060"
-      }
-    },
-    {
-      "content": "Communication",
-      "source": "Autism",
-      "chunk_id": 159,
-      "char_count": 13,
-      "content_hash": "3981a2b9c1ef7fce",
-      "retrieval_rank": 3,
-      "score": 1.08411,
-      "metadata": {
-        "source": "Autism",
-        "loader": "wikipedia_huggingface",
-        "topic_area": "general",
-        "chunk_id": 159,
-        "char_count": 13,
-        "content_hash": "3981a2b9c1ef7fce"
-      }
-    },
-    {
-      "content": "Aristotle (;  Aristotélēs, ; 384–322 BC) was a Greek philosopher and polymath during the Classical period in Ancient Greece. Taught by Plato, he was the founder of the Lyceum, the Peripatetic school of philosophy, and the Aristotelian tradition. His writings cover many subjects including physics, biology, zoology, metaphysics, logic, ethics, aesthetics, poetry, theatre, music, rhetoric, psychology, linguistics, economics, politics, meteorology, geology and government",
+      "content": "Near the end of his life, Alexander and Aristotle became estranged over Alexander's relationship with Persia and Persians. A widespread tradition in antiquity suspected Aristotle of playing a role in Alexander's death, but the only evidence of this is an unlikely claim made some six years after the death. Following Alexander's death, anti-Macedonian sentiment in Athens was rekindled",
       "source": "Aristotle",
-      "chunk_id": 1019,
-      "char_count": 471,
-      "content_hash": "1747e8f538ec291e",
-      "retrieval_rank": 4,
-      "score": 1.089525,
+      "chunk_id": 1040,
+      "char_count": 385,
+      "content_hash": "ce3f75d39e0a7616",
+      "retrieval_rank": 2,
+      "score": 1.029521,
       "metadata": {
         "source": "Aristotle",
         "loader": "wikipedia_huggingface",
         "topic_area": "general",
-        "chunk_id": 1019,
-        "char_count": 471,
-        "content_hash": "1747e8f538ec291e"
+        "chunk_id": 1040,
+        "char_count": 385,
+        "content_hash": "ce3f75d39e0a7616"
       }
     },
     {
-      "content": "The award was originally sculpted by George Stanley from a design sketch by Cedric Gibbons. AMPAS first presented it in 1929 at a private dinner hosted by Douglas Fairbanks in The Hollywood Roosevelt Hotel in what would become known as the 1st Academy Awards. The Academy Awards ceremony was first broadcast by radio in 1930 and was televised for the first time in 1953. It is the oldest worldwide entertainment awards ceremony and is now televised live worldwide",
-      "source": "Academy Awards",
-      "chunk_id": 1269,
-      "char_count": 463,
-      "content_hash": "187f9d088bca7057",
-      "retrieval_rank": 5,
-      "score": 1.148053,
+      "content": ". He had also learned a great deal about Persian customs and traditions from his teacher. Although his respect for Aristotle was diminished as his travels made it clear that much of Aristotle's geography was clearly wrong, when the old philosopher released his works to the public, Alexander complained \"Thou hast not done well to publish thy acroamatic doctrines; for in what shall I surpass other men if those doctrines wherein I have been trained are to be all men's common property?\"",
+      "source": "Aristotle",
+      "chunk_id": 1167,
+      "char_count": 487,
+      "content_hash": "2d0cfb745679163d",
+      "retrieval_rank": 3,
+      "score": 1.037503,
       "metadata": {
-        "source": "Academy Awards",
+        "source": "Aristotle",
         "loader": "wikipedia_huggingface",
         "topic_area": "general",
-        "chunk_id": 1269,
-        "char_count": 463,
-        "content_hash": "187f9d088bca7057"
+        "chunk_id": 1167,
+        "char_count": 487,
+        "content_hash": "2d0cfb745679163d"
+      }
+    },
+    {
+      "content": "Little is known about his life. Aristotle was born in the city of Stagira in Northern Greece. His father, Nicomachus, died when Aristotle was a child, and he was brought up by a guardian. At seventeen or eighteen years of age he joined Plato's Academy in Athens and remained there until the age of thirty-seven (c. 347 BC). Shortly after Plato died, Aristotle left Athens and, at the request of Philip II of Macedon, tutored Alexander the Great beginning in 343 BC",
+      "source": "Aristotle",
+      "chunk_id": 1021,
+      "char_count": 464,
+      "content_hash": "e57b4e68743e5a4e",
+      "retrieval_rank": 4,
+      "score": 1.052556,
+      "metadata": {
+        "source": "Aristotle",
+        "loader": "wikipedia_huggingface",
+        "topic_area": "general",
+        "chunk_id": 1021,
+        "char_count": 464,
+        "content_hash": "e57b4e68743e5a4e"
+      }
+    },
+    {
+      "content": ". She bore him a daughter, whom they also named Pythias. In 343 BC, Aristotle was invited by Philip II of Macedon to become the tutor to his son Alexander.",
+      "source": "Aristotle",
+      "chunk_id": 1034,
+      "char_count": 155,
+      "content_hash": "54446b2a54f5db67",
+      "retrieval_rank": 5,
+      "score": 1.06053,
+      "metadata": {
+        "source": "Aristotle",
+        "loader": "wikipedia_huggingface",
+        "topic_area": "general",
+        "chunk_id": 1034,
+        "char_count": 155,
+        "content_hash": "54446b2a54f5db67"
       }
     }
   ]
