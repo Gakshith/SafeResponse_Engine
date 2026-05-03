@@ -5,6 +5,9 @@ from src.saferesponse_engine.pipeline.stage_03_generation_layer import Generatio
 from src.saferesponse_engine.pipeline.stage_04_trace_collection_layer import (
     TraceCollectionLayerTrainingPipeline,
 )
+from src.saferesponse_engine.pipeline.stage_05_verification_layer import (
+    VerificationLayerTrainingPipeline,
+)
 
 STAGE_NAME = "User Query stage"
 try:
@@ -41,6 +44,16 @@ try:
     logger.info(f">>>>>> stage {STAGE_NAME} started <<<<<<")
     trace_collection_layer = TraceCollectionLayerTrainingPipeline()
     trace_collection_layer.main()
+    logger.info(f">>>>>> stage {STAGE_NAME} completed <<<<<<\n\nx==========x")
+except Exception as e:
+    logger.exception(e)
+    raise e
+
+STAGE_NAME = "Verification Layer stage"
+try:
+    logger.info(f">>>>>> stage {STAGE_NAME} started <<<<<<")
+    verification_layer = VerificationLayerTrainingPipeline()
+    verification_layer.main()
     logger.info(f">>>>>> stage {STAGE_NAME} completed <<<<<<\n\nx==========x")
 except Exception as e:
     logger.exception(e)

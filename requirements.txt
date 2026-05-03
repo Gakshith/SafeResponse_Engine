@@ -12,4 +12,6 @@ langchain-core
 langchain-community
 langchain-huggingface
 langchain-text-splitters
-
+openai
+protobuf
+sentencepiece

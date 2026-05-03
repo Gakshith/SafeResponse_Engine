@@ -5,6 +5,7 @@ from src.saferesponse_engine.entity.config_entity import (
     RetrievalConfig,
     GenerationConfig,
     TraceCollectionConfig,
+    VerificationConfig,
 )
 from pathlib import Path
 
@@ -90,4 +91,45 @@ class ConfigurationManager:
             max_context_length=int(config.max_context_length),
             collect_hidden_states=bool(config.collect_hidden_states),
             num_hidden_layers_to_save=int(config.num_hidden_layers_to_save),
+        )
+
+    def get_verification_config(self) -> VerificationConfig:
+        config = self.config.verification_layer
+
+        root_dir = Path(config.root_dir)
+        verification_output_path = Path(config.verification_output_path)
+        create_directories([root_dir, verification_output_path.parent])
+
+        return VerificationConfig(
+            root_dir=root_dir,
+            retrieval_artifact_path=Path(config.retrieval_artifact_path),
+            generation_artifact_path=Path(config.generation_artifact_path),
+            trace_artifact_path=Path(config.trace_artifact_path),
+            verification_output_path=verification_output_path,
+            embedding_model=str(config.embedding_model),
+            embedding_backend=str(getattr(config, "embedding_backend", "lexical")),
+            enable_halluguard=bool(config.enable_halluguard),
+            enable_ntk=bool(getattr(config, "enable_ntk", True)),
+            enable_jacobian_instability=bool(
+                getattr(config, "enable_jacobian_instability", False)
+            ),
+            enable_spectral_conditioning=bool(
+                getattr(config, "enable_spectral_conditioning", True)
+            ),
+            enable_grounding_score=bool(config.enable_grounding_score),
+            enable_consistency_score=bool(config.enable_consistency_score),
+            enable_nli_consistency=bool(
+                getattr(config, "enable_nli_consistency", False)
+            ),
+            enable_judge=bool(config.enable_judge),
+            trace_model_name=str(
+                getattr(config, "trace_model_name", self.config.trace_collection_layer.model_name)
+            ),
+            nli_model_name=str(
+                getattr(config, "nli_model_name", "cross-encoder/nli-deberta-v3-small")
+            ),
+            judge_model=str(getattr(config, "judge_model", "gpt-4o-mini")),
+            halluguard_threshold=float(config.halluguard_threshold),
+            grounding_threshold=float(config.grounding_threshold),
+            consistency_threshold=float(config.consistency_threshold),
         )

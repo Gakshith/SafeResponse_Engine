@@ -54,13 +54,39 @@ class TraceCollectionLayer:
         return "cpu", torch.float32
 
     def _build_prompt(self, query: str, context: str) -> str:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a factual assistant. Answer only from the provided "
+                    "context. If the context does not contain the answer, say "
+                    "\"I don't know.\" Keep the answer concise and do not invent "
+                    "follow-up questions."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Context:\n{context}\n\n"
+                    f"Question: {query}\n\n"
+                    "Answer in one short paragraph."
+                ),
+            },
+        ]
+        if hasattr(self.tokenizer, "apply_chat_template") and self.tokenizer.chat_template:
+            return self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
         return (
-            "You are a factual assistant. "
-            "Answer ONLY based on the provided context.\n"
-            "If the context does not contain the answer, say 'I don't know.'\n\n"
+            "System: You are a factual assistant. Answer only from the provided "
+            "context. If the context does not contain the answer, say \"I don't know.\" "
+            "Keep the answer concise and do not invent follow-up questions.\n\n"
+            "User: "
             f"Context:\n{context}\n\n"
             f"Question: {query}\n\n"
-            "Answer:"
+            "Answer in one short paragraph.\nAssistant:"
         )
 
     def _collect_trace(self, prompt: str, candidate: dict[str, Any]) -> dict[str, Any]:

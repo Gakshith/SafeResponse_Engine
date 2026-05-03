@@ -1,0 +1,198 @@
+{
+  "query": "Who was Alexander the Great?",
+  "verification_model": {
+    "embedding_model": "BAAI/bge-m3",
+    "embedding_backend": "huggingface",
+    "nli_model": "cross-encoder/nli-deberta-v3-small",
+    "nli_enabled": false,
+    "trace_model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "judge_enabled": false,
+    "judge_model": "gpt-4o-mini",
+    "halluguard_modules": {
+      "ntk": true,
+      "jacobian_instability": true,
+      "spectral_conditioning": true
+    }
+  },
+  "thresholds": {
+    "halluguard_threshold": 0.45,
+    "grounding_threshold": 0.75,
+    "consistency_threshold": 0.7
+  },
+  "candidates": [
+    {
+      "response_id": 0,
+      "text": "Alexander the Great was a king of Macedonia who ruled from 336 to 323 BCE.",
+      "is_primary": true,
+      "temperature": 0.0,
+      "halluguard_score": 0.324035,
+      "halluguard_features": {
+        "uncertainty_score": 0.117691,
+        "tail_risk_score": 0.186803,
+        "variance_score": 0.136425,
+        "hidden_state_score": 0.350257,
+        "hidden_state_stats": {
+          "available": true,
+          "norm_mean": 65.4375,
+          "norm_std": 3.470703,
+          "step_drift_mean": 52.09375
+        },
+        "ntk": {
+          "available": true,
+          "off_diagonal_mean": 0.439868,
+          "off_diagonal_std": 0.223879,
+          "score": 0.719934
+        },
+        "spectral_conditioning": {
+          "available": true,
+          "s_max": 609.740112,
+          "s_min": 34.698299,
+          "condition_number": 17.572622,
+          "score": 0.292169
+        },
+        "jacobian_instability": {
+          "available": true,
+          "method": "autograd_input_embedding_gradient",
+          "grad_norm_mean": 8.355837,
+          "grad_norm_max": 122.931709,
+          "score": 0.4472
+        }
+      },
+      "grounding_score": 0.748167,
+      "consistency_score": 0.980881,
+      "consistency_features": {
+        "embedding_consistency": 0.980881,
+        "nli_contradiction_score": null
+      },
+      "judge_score": null,
+      "supporting_source": {
+        "source": "Aristotle",
+        "chunk_id": 1040,
+        "content_hash": "ce3f75d39e0a7616"
+      },
+      "risk_signals": {
+        "low_mean_logprob": false,
+        "low_min_logprob": false,
+        "weak_grounding": true,
+        "high_sample_divergence": false,
+        "hidden_state_instability": false
+      }
+    },
+    {
+      "response_id": 1,
+      "text": "Alexander the Great was a Greek king who ruled from 336 to 323 BCE.",
+      "is_primary": false,
+      "temperature": 0.7,
+      "halluguard_score": 0.332134,
+      "halluguard_features": {
+        "uncertainty_score": 0.085897,
+        "tail_risk_score": 0.214293,
+        "variance_score": 0.162908,
+        "hidden_state_score": 0.338726,
+        "hidden_state_stats": {
+          "available": true,
+          "norm_mean": 65.3125,
+          "norm_std": 3.767578,
+          "step_drift_mean": 49.65625
+        },
+        "ntk": {
+          "available": true,
+          "off_diagonal_mean": 0.541636,
+          "off_diagonal_std": 0.187742,
+          "score": 0.770818
+        },
+        "spectral_conditioning": {
+          "available": true,
+          "s_max": 621.688416,
+          "s_min": 34.450459,
+          "condition_number": 18.045868,
+          "score": 0.294685
+        },
+        "jacobian_instability": {
+          "available": true,
+          "method": "autograd_input_embedding_gradient",
+          "grad_norm_mean": 8.355837,
+          "grad_norm_max": 122.931709,
+          "score": 0.4472
+        }
+      },
+      "grounding_score": 0.758715,
+      "consistency_score": 0.962743,
+      "consistency_features": {
+        "embedding_consistency": 0.962743,
+        "nli_contradiction_score": null
+      },
+      "judge_score": null,
+      "supporting_source": {
+        "source": "Achilles",
+        "chunk_id": 718,
+        "content_hash": "3d139ed9433f03d9"
+      },
+      "risk_signals": {
+        "low_mean_logprob": false,
+        "low_min_logprob": false,
+        "weak_grounding": false,
+        "high_sample_divergence": false,
+        "hidden_state_instability": false
+      }
+    },
+    {
+      "response_id": 2,
+      "text": "Alexander the Great was the king of Macedonia who ruled from 336-323 BCE.",
+      "is_primary": false,
+      "temperature": 0.7,
+      "halluguard_score": 0.342973,
+      "halluguard_features": {
+        "uncertainty_score": 0.106899,
+        "tail_risk_score": 0.229046,
+        "variance_score": 0.19349,
+        "hidden_state_score": 0.34375,
+        "hidden_state_stats": {
+          "available": true,
+          "norm_mean": 64.5,
+          "norm_std": 3.578125,
+          "step_drift_mean": 50.0625
+        },
+        "ntk": {
+          "available": true,
+          "off_diagonal_mean": 0.535855,
+          "off_diagonal_std": 0.190822,
+          "score": 0.767928
+        },
+        "spectral_conditioning": {
+          "available": true,
+          "s_max": 621.834106,
+          "s_min": 33.060143,
+          "condition_number": 18.809178,
+          "score": 0.298615
+        },
+        "jacobian_instability": {
+          "available": true,
+          "method": "autograd_input_embedding_gradient",
+          "grad_norm_mean": 8.355837,
+          "grad_norm_max": 122.931709,
+          "score": 0.4472
+        }
+      },
+      "grounding_score": 0.745506,
+      "consistency_score": 0.976315,
+      "consistency_features": {
+        "embedding_consistency": 0.976315,
+        "nli_contradiction_score": null
+      },
+      "judge_score": null,
+      "supporting_source": {
+        "source": "Aristotle",
+        "chunk_id": 1040,
+        "content_hash": "ce3f75d39e0a7616"
+      },
+      "risk_signals": {
+        "low_mean_logprob": false,
+        "low_min_logprob": false,
+        "weak_grounding": true,
+        "high_sample_divergence": false,
+        "hidden_state_instability": false
+      }
+    }
+  ]
+}

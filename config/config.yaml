@@ -14,7 +14,7 @@ retrieval_layer:
     top_k: 5
     chunk_size: 500
     chunk_overlap: 100
-    num_articles: 15
+    num_articles: 50000
     min_score_threshold: 0.5
 
 generation_layer:
@@ -38,3 +38,26 @@ trace_collection_layer:
   max_context_length: 2048
   collect_hidden_states: true
   num_hidden_layers_to_save: -1
+
+verification_layer:
+  root_dir: artifacts/verification
+  retrieval_artifact_path: artifacts/retrieval/retrieved_chunks.json
+  generation_artifact_path: artifacts/generation/candidates.json
+  trace_artifact_path: artifacts/traces/traces.json
+  verification_output_path: artifacts/verification/verification_scores.json
+  embedding_model: BAAI/bge-m3
+  embedding_backend: huggingface
+  enable_halluguard: true
+  enable_ntk: true
+  enable_jacobian_instability: true
+  enable_spectral_conditioning: true
+  enable_grounding_score: true
+  enable_consistency_score: true
+  enable_nli_consistency: false
+  enable_judge: false
+  trace_model_name: Qwen/Qwen2.5-0.5B-Instruct
+  nli_model_name: cross-encoder/nli-deberta-v3-small
+  judge_model: gpt-4o-mini
+  halluguard_threshold: 0.45
+  grounding_threshold: 0.75
+  consistency_threshold: 0.70

@@ -47,3 +47,28 @@ class TraceCollectionConfig:
     max_context_length: int
     collect_hidden_states: bool
     num_hidden_layers_to_save: int
+
+
+@dataclass(frozen=True)
+class VerificationConfig:
+    root_dir: Path
+    retrieval_artifact_path: Path
+    generation_artifact_path: Path
+    trace_artifact_path: Path
+    verification_output_path: Path
+    embedding_model: str
+    embedding_backend: str
+    enable_halluguard: bool
+    enable_ntk: bool
+    enable_jacobian_instability: bool
+    enable_spectral_conditioning: bool
+    enable_grounding_score: bool
+    enable_consistency_score: bool
+    enable_nli_consistency: bool
+    enable_judge: bool
+    trace_model_name: str
+    nli_model_name: str
+    judge_model: str
+    halluguard_threshold: float
+    grounding_threshold: float
+    consistency_threshold: float
