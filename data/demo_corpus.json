@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Abraham Lincoln",
+    "text": "Abraham Lincoln was an American lawyer and statesman who served as the 16th president of the United States from 1861 until his assassination in 1865. He led the United States through the American Civil War, preserved the Union, and issued the Emancipation Proclamation. Lincoln was born on February 12, 1809, in a log cabin on Sinking Spring Farm near Hodgenville, Kentucky. He was the second child of Thomas Lincoln and Nancy Hanks Lincoln. His siblings included Sarah Lincoln and Thomas Lincoln Jr., who died in infancy."
+  },
+  {
+    "title": "Alexander the Great",
+    "text": "Alexander the Great was king of the ancient Greek kingdom of Macedon. He ruled from 336 BCE until his death in 323 BCE and created one of the largest empires of the ancient world. Alexander was tutored by Aristotle and led military campaigns across Asia, Egypt, and Persia."
+  },
+  {
+    "title": "Aristotle",
+    "text": "Aristotle was an ancient Greek philosopher and polymath. He studied under Plato in Athens and later tutored Alexander the Great. His writings influenced logic, biology, ethics, politics, rhetoric, and metaphysics."
+  },
+  {
+    "title": "Achilles",
+    "text": "Achilles is a central hero of Greek mythology and the Trojan War. In the Iliad, he is the greatest warrior of the Greek army. Later traditions connected Achilles to heroic ancestry claimed by rulers such as Alexander the Great."
+  },
+  {
+    "title": "Wikipedia",
+    "text": "Wikipedia is a free online encyclopedia written and maintained by volunteers. It contains articles on history, science, people, places, and many other topics. This project uses a controlled corpus inspired by Wikipedia-style factual articles for retrieval-grounded demos."
+  }
+]

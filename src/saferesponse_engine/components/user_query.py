@@ -1,9 +1,9 @@
 import ssl
 from urllib import request
 from urllib.parse import urlparse
-from src.saferesponse_engine.entity.config_entity import UserQueryConfig
-from src.saferesponse_engine import logger
-from src.saferesponse_engine.utils.common import get_size
+from saferesponse_engine.entity.config_entity import UserQueryConfig
+from saferesponse_engine import logger
+from saferesponse_engine.utils.common import get_size
 
 class UserQuery:
     def __init__(self, config: UserQueryConfig):

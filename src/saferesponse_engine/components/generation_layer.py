@@ -1,16 +1,20 @@
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers.generation.stopping_criteria import StoppingCriteria, StoppingCriteriaList
 
-from src.saferesponse_engine import logger
-from src.saferesponse_engine.entity.config_entity import GenerationConfig
-from src.saferesponse_engine.utils.common import load_json
-
-_MODEL_CACHE: dict = {}
+from saferesponse_engine import logger
+from saferesponse_engine.components.model_runtime import (
+    get_causal_lm,
+    get_tokenizer,
+    resolve_model_source,
+    select_runtime,
+)
+from saferesponse_engine.entity.config_entity import GenerationConfig
+from saferesponse_engine.utils.common import load_json
 
 
 class StopOnSubstrings(StoppingCriteria):
@@ -31,44 +35,23 @@ class StopOnSubstrings(StoppingCriteria):
 class GenerationLayer:
     def __init__(self, config: GenerationConfig):
         self.config = config
-        self.device, self.dtype = self._select_runtime()
+        self.device, self.dtype = select_runtime()
+        self.tokenizer = None
+        self.model = None
 
-        # load tokenizer
-        logger.info("[Stage 3] Loading tokenizer: %s", config.model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(config.model_name)
-        if self.tokenizer.pad_token_id is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-        # check cache first — skip loading if already in memory
-        if config.model_name in _MODEL_CACHE:
-            logger.info("[Stage 3] Loading model from cache — skipping disk read")
-            self.model = _MODEL_CACHE[config.model_name]
-        else:
-            logger.info(
-                "[Stage 3] Loading model from disk: %s | device=%s | dtype=%s",
-                config.model_name,
+    def _ensure_model(self) -> None:
+        if self.tokenizer is None:
+            self.tokenizer = get_tokenizer(
+                self.config.model_name,
+                self.config.finetuned_model_path,
+            )
+        if self.model is None:
+            self.model = get_causal_lm(
+                self.config.model_name,
                 self.device,
                 self.dtype,
+                self.config.finetuned_model_path,
             )
-            self.model = AutoModelForCausalLM.from_pretrained(
-                config.model_name,
-                torch_dtype=self.dtype,
-                low_cpu_mem_usage=True,
-            )
-            self.model.to(self.device)
-            self.model.eval()
-            _MODEL_CACHE[config.model_name] = self.model
-            logger.info("[Stage 3] Model loaded and cached in memory")
-
-    @staticmethod
-    def _select_runtime() -> tuple[str, torch.dtype]:
-        if torch.cuda.is_available():
-            if torch.cuda.is_bf16_supported():
-                return "cuda", torch.bfloat16
-            return "cuda", torch.float16
-        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-            return "mps", torch.float16
-        return "cpu", torch.float32
 
     # build_context — joins retrieved chunks into one context string
     def _build_context(self, chunks: list[dict]) -> str:
@@ -80,23 +63,36 @@ class GenerationLayer:
         return "\n\n".join(parts)
 
     # build_prompt — chat-formatted system prompt + context + query
-    def _build_prompt(self, user_query: str, context: str) -> str:
+    def _build_prompt(
+        self,
+        user_query: str,
+        context: str,
+        memory_context: str = "",
+    ) -> str:
+        memory_block = (
+            f"Conversation memory:\n{memory_context}\n\n"
+            if memory_context.strip()
+            else ""
+        )
         messages = [
             {
                 "role": "system",
                 "content": (
                     "You are a factual assistant. Answer only from the provided "
-                    "context. If the context does not contain the answer, say "
-                    "\"I don't know.\" Keep the answer concise and do not invent "
-                    "follow-up questions."
+                    "document context and conversation memory. If both are empty, "
+                    "unrelated, or do not contain the answer, reply exactly: "
+                    "\"I don't know based on the provided context.\" Keep the "
+                    "answer concise. Do not add background, explanations, or "
+                    "details that are not explicitly stated in the context."
                 ),
             },
             {
                 "role": "user",
                 "content": (
-                    f"Context:\n{context}\n\n"
+                    f"{memory_block}"
+                    f"Document context:\n{context}\n\n"
                     f"Question: {user_query}\n\n"
-                    "Answer in one short paragraph."
+                    "Answer in one short sentence, 40 words or fewer."
                 ),
             },
         ]
@@ -108,11 +104,15 @@ class GenerationLayer:
             )
         return (
             "System: You are a factual assistant. Answer only from the provided "
-            "context. If the context does not contain the answer, say \"I don't know.\" "
-            "Keep the answer concise and do not invent follow-up questions.\n\n"
-            f"User: Context:\n{context}\n\n"
+            "document context and conversation memory. If both are empty, unrelated, "
+            "or do not contain the answer, reply exactly: \"I don't know based on "
+            "the provided context.\" Keep the answer concise. Do not add background, "
+            "explanations, or details that are not explicitly stated in the "
+            "context.\n\n"
+            f"User: {memory_block}"
+            f"Document context:\n{context}\n\n"
             f"Question: {user_query}\n\n"
-            "Answer in one short paragraph.\nAssistant:"
+            "Answer in one short sentence, 40 words or fewer.\nAssistant:"
         )
 
     @staticmethod
@@ -137,6 +137,40 @@ class GenerationLayer:
                 cleaned = cleaned[:stop_index].strip()
         return cleaned
 
+    @staticmethod
+    def _is_summary_query(query: str) -> bool:
+        normalized = re.sub(r"\s+", " ", query.lower()).strip()
+        return any(
+            phrase in normalized
+            for phrase in (
+                "summary",
+                "summarize",
+                "tell me about",
+                "give me about",
+                "give me a short",
+            )
+        )
+
+    @staticmethod
+    def _trim_words(text: str, max_words: int) -> str:
+        words = text.split()
+        if len(words) <= max_words:
+            return text.strip()
+        return " ".join(words[:max_words]).rstrip(",;:") + "."
+
+    def _extractive_summary_candidate(self, chunks: list[dict]) -> dict[str, Any]:
+        content = str(chunks[0].get("content", "")).strip()
+        first_sentence = re.split(r"(?<=[.!?])\s+", content, maxsplit=1)[0].strip()
+        answer = self._trim_words(first_sentence or content, 40)
+        return {
+            "response_id": 0,
+            "text": answer,
+            "is_primary": True,
+            "temperature": 0.0,
+            "num_tokens": len(answer.split()),
+            "requires_model_trace": False,
+        }
+
     # generate_single — generate one candidate at a given temperature
     def _generate_single(
         self,
@@ -145,6 +179,7 @@ class GenerationLayer:
         response_id: int,
         is_primary: bool
     ) -> dict[str, Any]:
+        self._ensure_model()
 
         inputs = self.tokenizer(
             prompt,
@@ -171,6 +206,7 @@ class GenerationLayer:
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
                 stopping_criteria=stopping_criteria,
+                use_cache=False,
             )
 
         # decode only the newly generated tokens
@@ -192,7 +228,25 @@ class GenerationLayer:
             "text": response_text,
             "is_primary": is_primary,
             "temperature": temperature,
-            "num_tokens": len(response_ids)
+            "num_tokens": len(response_ids),
+            "requires_model_trace": True,
+        }
+
+    @staticmethod
+    def _optional_field(data: Any, key: str, default: Any = "") -> Any:
+        if isinstance(data, dict):
+            return data.get(key, default)
+        return getattr(data, key, default)
+
+    @staticmethod
+    def _context_guard_candidate() -> dict[str, Any]:
+        return {
+            "response_id": 0,
+            "text": "I don't know based on the provided context.",
+            "is_primary": True,
+            "temperature": 0.0,
+            "num_tokens": 0,
+            "requires_model_trace": False,
         }
 
     # generate — main method, reads Stage 2 artifact, saves Stage 3 artifact
@@ -202,13 +256,62 @@ class GenerationLayer:
         retrieval_data = load_json(self.config.retrieval_artifact_path)
         user_query = retrieval_data["query"]
         chunks = retrieval_data["chunks"]
+        memory_context = self._optional_field(retrieval_data, "memory_context", "")
 
         logger.info("[Stage 3] Query: '%s'", user_query)
         logger.info("[Stage 3] Using %s retrieved chunks", len(chunks))
 
-        # Step 2: build context + prompt
+        if not chunks and not memory_context.strip():
+            logger.info(
+                "[Stage 3] No retrieved context found; using direct context guard."
+            )
+            candidates = [self._context_guard_candidate()]
+            output = {
+                "query": user_query,
+                "context": "",
+                "memory_context": memory_context,
+                "model_name": "context_guard",
+                "finetuned_model_path": self.config.finetuned_model_path,
+                "runtime_model_source": "context_guard",
+                "num_candidates": 1,
+                "candidates": candidates,
+            }
+            output_path = Path(self.config.generation_output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(
+                json.dumps(output, indent=2, ensure_ascii=False),
+                encoding="utf-8"
+            )
+            logger.info("[Stage 3] Artifact saved: %s", output_path)
+            return output
+
         context = self._build_context(chunks)
-        prompt = self._build_prompt(user_query, context)
+        if chunks and self._is_summary_query(user_query):
+            logger.info("[Stage 3] Using extractive summary for summary-style query.")
+            candidates = [self._extractive_summary_candidate(chunks)]
+            output = {
+                "query": user_query,
+                "context": context,
+                "memory_context": memory_context,
+                "model_name": "extractive_summary",
+                "finetuned_model_path": self.config.finetuned_model_path,
+                "runtime_model_source": "extractive_summary",
+                "num_candidates": 1,
+                "candidates": candidates,
+            }
+            output_path = Path(self.config.generation_output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(
+                json.dumps(output, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            logger.info("[Stage 3] Artifact saved: %s", output_path)
+            return output
+
+        self._ensure_model()
+
+        # Step 2: build context + prompt
+        prompt = self._build_prompt(user_query, context, memory_context)
 
         # Step 3: generate N candidates
         candidates = []
@@ -234,7 +337,13 @@ class GenerationLayer:
         output = {
             "query": user_query,
             "context": context,
+            "memory_context": memory_context,
             "model_name": self.config.model_name,
+            "finetuned_model_path": self.config.finetuned_model_path,
+            "runtime_model_source": resolve_model_source(
+                self.config.model_name,
+                self.config.finetuned_model_path,
+            ),
             "num_candidates": self.config.num_candidates,
             "candidates": candidates
         }

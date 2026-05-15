@@ -4,7 +4,7 @@ import json
 import pickle
 from pathlib import Path
 from typing import Any, Dict, List
-from src.saferesponse_engine import logger
+from saferesponse_engine import logger
 
 
 class ConfigBox:

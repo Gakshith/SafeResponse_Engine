@@ -15,12 +15,15 @@ class RetrievalConfig:
     query_artifact_path: Path
     faiss_index_path: Path
     retrieval_output_path: Path
+    retrieval_backend: str
+    local_corpus_path: Path | None
     embedding_model: str
     top_k: int
     chunk_size: int
     chunk_overlap: int
     num_articles: int
     min_score_threshold: float
+    min_lexical_matches: int
 
 
 @dataclass(frozen=True)
@@ -47,6 +50,7 @@ class TraceCollectionConfig:
     max_context_length: int
     collect_hidden_states: bool
     num_hidden_layers_to_save: int
+    finetuned_model_path: str | None = None
 
 
 @dataclass(frozen=True)
@@ -72,3 +76,46 @@ class VerificationConfig:
     halluguard_threshold: float
     grounding_threshold: float
     consistency_threshold: float
+
+
+@dataclass(frozen=True)
+class FusionRouterConfig:
+    root_dir: Path
+    verification_artifact_path: Path
+    traces_artifact_path: Path
+    fusion_output_path: Path
+    weight_halluguard: float
+    weight_grounding: float
+    weight_consistency: float
+    weight_judge: float
+    accept_threshold: float
+    rewrite_threshold: float
+    reject_threshold: float
+    max_rewrite_attempts: int
+
+
+@dataclass(frozen=True)
+class FinalOutputConfig:
+    root_dir: Path
+    fusion_artifact_path: Path
+    verification_artifact_path: Path
+    final_output_path: Path
+    high_confidence_threshold: float
+    medium_confidence_threshold: float
+    low_confidence_threshold: float
+    include_risk_explanation: bool
+    include_pipeline_summary: bool
+    include_formatted_response: bool
+    max_answer_length: int
+    max_answer_words: int
+
+
+@dataclass(frozen=True)
+class ConversationMemoryConfig:
+    root_dir: Path
+    memory_store_path: Path
+    max_recent_turns: int
+    max_relevant_turns: int
+    summary_max_words: int
+    min_overlap_score: float
+    max_conversations: int

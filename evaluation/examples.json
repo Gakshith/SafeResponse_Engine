@@ -1,0 +1,145 @@
+[
+  {
+    "id": "small_talk_hi",
+    "category": "small_talk",
+    "query": "hi",
+    "expected_decision": "DIRECT",
+    "run_pipeline": false,
+    "notes": "Small talk should bypass model inference."
+  },
+  {
+    "id": "supported_abraham_lincoln",
+    "category": "supported_factual",
+    "query": "Give me a short summary about Abraham Lincoln.",
+    "expected_decision": "ACCEPT",
+    "expected_answer_contains": ["Abraham Lincoln"],
+    "run_pipeline": true,
+    "notes": "Expected to pass when the controlled corpus includes Abraham Lincoln."
+  },
+  {
+    "id": "unsupported_current_event",
+    "category": "unsupported",
+    "query": "Who is the current CEO of a company that is not in the corpus?",
+    "expected_decision": "REJECT",
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Current or out-of-corpus facts should be rejected unless retrieved context supports them."
+  },
+  {
+    "id": "ambiguous_mercury",
+    "category": "ambiguous",
+    "query": "Tell me about Mercury.",
+    "expected_decision": "REJECT",
+    "run_pipeline": true,
+    "notes": "Ambiguous questions should not be answered unless retrieval support is specific."
+  },
+  {
+    "id": "misspelled_abraham_lincoln",
+    "category": "misspelled",
+    "query": "Give me about the Abram Lilncoln.",
+    "expected_decision": "ACCEPT",
+    "run_pipeline": true,
+    "notes": "Misspelled supported queries should still work if retrieval finds the right source."
+  },
+  {
+    "id": "unsupported_live_president_overlap",
+    "category": "unsupported",
+    "query": "Who is the president of the United States?",
+    "expected_decision": "REJECT",
+    "expected_answer_not_contains": ["Abraham Lincoln"],
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Keyword overlap with a historical president article must not answer a current/live office question."
+  },
+  {
+    "id": "unsupported_live_president_2026_overlap",
+    "category": "unsupported_live_fact",
+    "query": "Who is the president of the United States in 2026?",
+    "expected_decision": "REJECT",
+    "expected_answer_not_contains": ["Abraham Lincoln"],
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Date-specific current office questions must not be answered from a historical Lincoln article."
+  },
+  {
+    "id": "unsupported_lincoln_current_president_yes_no",
+    "category": "unsupported_live_fact",
+    "query": "Is Abraham Lincoln the current president of the United States?",
+    "expected_decision": "REJECT",
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Entity overlap with Lincoln should not convert a current-fact question into a supported historical answer."
+  },
+  {
+    "id": "unsupported_lincoln_company",
+    "category": "unsupported",
+    "query": "What company did Abraham Lincoln found?",
+    "expected_decision": "REJECT",
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Entity overlap with Abraham Lincoln must not support an unsupported invented organization."
+  },
+  {
+    "id": "unsupported_lincoln_favorite_food",
+    "category": "unsupported",
+    "query": "What was Abraham Lincoln's favorite food?",
+    "expected_decision": "REJECT",
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Unsupported entity-specific attributes should be rejected rather than accepted as a grounded answer."
+  },
+  {
+    "id": "supported_aristotle_tutored_alexander",
+    "category": "supported_factual",
+    "query": "Who tutored Alexander the Great?",
+    "expected_decision": "ACCEPT",
+    "expected_answer_contains": ["Aristotle"],
+    "run_pipeline": true,
+    "notes": "A supported relation present in the controlled corpus should pass."
+  },
+  {
+    "id": "unsupported_aristotle_computers",
+    "category": "unsupported",
+    "query": "What computer programming language did Aristotle create?",
+    "expected_decision": "REJECT",
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Entity overlap with Aristotle must not support an anachronistic invented claim."
+  },
+  {
+    "id": "supported_lincoln_emancipation",
+    "category": "supported_factual",
+    "query": "What proclamation did Abraham Lincoln issue?",
+    "expected_decision": "ACCEPT",
+    "expected_answer_contains": ["Emancipation"],
+    "run_pipeline": true,
+    "notes": "Supported facts explicitly present in the controlled corpus should remain answerable."
+  },
+  {
+    "id": "supported_aristotle_plato",
+    "category": "supported_factual",
+    "query": "Who studied under Plato in Athens?",
+    "expected_decision": "ACCEPT",
+    "expected_answer_contains": ["Aristotle"],
+    "run_pipeline": true,
+    "notes": "Supported corpus facts should still pass as negative coverage grows."
+  },
+  {
+    "id": "unsupported_realtime_weather",
+    "category": "unsupported_live_fact",
+    "query": "What is today's weather in San Francisco?",
+    "expected_decision": "REJECT",
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Realtime weather must not be answered from the historical demo corpus."
+  },
+  {
+    "id": "unsupported_recent_stock_market",
+    "category": "unsupported_live_fact",
+    "query": "What happened in the stock market yesterday?",
+    "expected_decision": "REJECT",
+    "expected_warnings_any": ["unsupported", "grounding"],
+    "run_pipeline": true,
+    "notes": "Recent market/news questions should be rejected without current retrieval support."
+  }
+]

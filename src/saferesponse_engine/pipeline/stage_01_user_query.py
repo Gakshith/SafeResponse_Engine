@@ -1,6 +1,6 @@
-from src.saferesponse_engine import logger
-from src.saferesponse_engine.config.configuration import ConfigurationManager
-from src.saferesponse_engine.components.user_query import UserQuery
+from saferesponse_engine import logger
+from saferesponse_engine.config.configuration import ConfigurationManager
+from saferesponse_engine.components.user_query import UserQuery
 STAGE_NAME = "User_Query_STAGE"
 
 

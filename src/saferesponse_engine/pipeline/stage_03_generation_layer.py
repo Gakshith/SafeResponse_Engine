@@ -1,5 +1,5 @@
-from src.saferesponse_engine.components.generation_layer import GenerationLayer
-from src.saferesponse_engine.config.configuration import ConfigurationManager
+from saferesponse_engine.components.generation_layer import GenerationLayer
+from saferesponse_engine.config.configuration import ConfigurationManager
 
 
 STAGE_NAME = "Generation_Layer_STAGE"

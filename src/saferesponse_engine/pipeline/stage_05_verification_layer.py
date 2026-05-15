@@ -1,5 +1,5 @@
-from src.saferesponse_engine.components.verification_layer import VerificationLayer
-from src.saferesponse_engine.config.configuration import ConfigurationManager
+from saferesponse_engine.components.verification_layer import VerificationLayer
+from saferesponse_engine.config.configuration import ConfigurationManager
 
 
 STAGE_NAME = "Verification_Layer_STAGE"

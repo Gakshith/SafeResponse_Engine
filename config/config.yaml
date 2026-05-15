@@ -1,44 +1,57 @@
 artifacts_root: artifacts
-
 user_query:
-    root_dir: artifacts/user_query
-    source_url: https://github.com/Gakshith/CSC317/blob/main/user_query.txt
-    local_data_file: artifacts/user_query/data.txt
-
+  root_dir: artifacts/user_query
+  source_url: https://github.com/Gakshith/CSC317/blob/main/user_query.txt
+  local_data_file: artifacts/user_query/data.txt
 retrieval_layer:
-    root_dir: artifacts/retrieval
-    query_artifact_path: artifacts/user_query/data.txt
-    faiss_index_path: artifacts/retrieval/faiss_index
-    retrieval_output_path: artifacts/retrieval/retrieved_chunks.json
-    embedding_model: BAAI/bge-m3
-    top_k: 5
-    chunk_size: 500
-    chunk_overlap: 100
-    num_articles: 50000
-    min_score_threshold: 0.5
-
+  root_dir: artifacts/retrieval
+  query_artifact_path: artifacts/user_query/data.txt
+  faiss_index_path: artifacts/retrieval/faiss_index
+  retrieval_output_path: artifacts/retrieval/retrieved_chunks.json
+  retrieval_backend: lexical
+  local_corpus_path: data/demo_corpus.json
+  embedding_model: BAAI/bge-m3
+  top_k: 3
+  chunk_size: 500
+  chunk_overlap: 100
+  num_articles: 10
+  min_score_threshold: 0.95
+  min_lexical_matches: 2
 generation_layer:
   root_dir: artifacts/generation
   retrieval_artifact_path: artifacts/retrieval/retrieved_chunks.json
   generation_output_path: artifacts/generation/candidates.json
   model_name: Qwen/Qwen2.5-0.5B-Instruct
   finetuned_model_path: null
-  num_candidates: 3
+  num_candidates: 1
   primary_temperature: 0.0
   sample_temperature: 0.7
-  max_new_tokens: 96
+  max_new_tokens: 48
   max_context_length: 1024
-
+training:
+  base_model_name: Qwen/Qwen2.5-0.5B-Instruct
+  train_file: data/squad_v2/finetune_train.jsonl
+  output_dir: models/saferesponse-qwen-lora
+  registry_path: model_registry/registry.json
+  max_seq_length: 768
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 0.0002
+  warmup_ratio: 0.03
+  lora_r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
 trace_collection_layer:
   root_dir: artifacts/traces
   generation_artifact_path: artifacts/generation/candidates.json
   trace_output_path: artifacts/traces/traces.json
   hidden_states_dir: artifacts/traces/hidden_states
-  model_name: Qwen/Qwen2.5-1.5B-Instruct
+  model_name: Qwen/Qwen2.5-0.5B-Instruct
+  finetuned_model_path: null
   max_context_length: 2048
-  collect_hidden_states: true
+  collect_hidden_states: false
   num_hidden_layers_to_save: -1
-
 verification_layer:
   root_dir: artifacts/verification
   retrieval_artifact_path: artifacts/retrieval/retrieved_chunks.json
@@ -46,11 +59,11 @@ verification_layer:
   trace_artifact_path: artifacts/traces/traces.json
   verification_output_path: artifacts/verification/verification_scores.json
   embedding_model: BAAI/bge-m3
-  embedding_backend: huggingface
+  embedding_backend: lexical
   enable_halluguard: true
-  enable_ntk: true
-  enable_jacobian_instability: true
-  enable_spectral_conditioning: true
+  enable_ntk: false
+  enable_jacobian_instability: false
+  enable_spectral_conditioning: false
   enable_grounding_score: true
   enable_consistency_score: true
   enable_nli_consistency: false
@@ -59,5 +72,39 @@ verification_layer:
   nli_model_name: cross-encoder/nli-deberta-v3-small
   judge_model: gpt-4o-mini
   halluguard_threshold: 0.45
-  grounding_threshold: 0.75
-  consistency_threshold: 0.70
+  grounding_threshold: 0.7
+  consistency_threshold: 0.7
+fusion_router:
+  root_dir: artifacts/fusion
+  verification_artifact_path: artifacts/verification/verification_scores.json
+  traces_artifact_path: artifacts/traces/traces.json
+  fusion_output_path: artifacts/fusion/fusion_result.json
+  weight_halluguard: 0.35
+  weight_grounding: 0.3
+  weight_consistency: 0.2
+  weight_judge: 0.15
+  accept_threshold: 0.3
+  rewrite_threshold: 0.5
+  reject_threshold: 0.75
+  max_rewrite_attempts: 3
+final_output_layer:
+  root_dir: artifacts/final_output
+  fusion_artifact_path: artifacts/fusion/fusion_result.json
+  verification_artifact_path: artifacts/verification/verification_scores.json
+  final_output_path: artifacts/final_output/final_response.json
+  high_confidence_threshold: 0.2
+  medium_confidence_threshold: 0.4
+  low_confidence_threshold: 0.75
+  include_risk_explanation: true
+  include_pipeline_summary: true
+  include_formatted_response: true
+  max_answer_length: 512
+  max_answer_words: 100
+conversation_memory_layer:
+  root_dir: artifacts/conversation_memory
+  memory_store_path: artifacts/conversation_memory/conversations.json
+  max_recent_turns: 6
+  max_relevant_turns: 4
+  summary_max_words: 120
+  min_overlap_score: 0.05
+  max_conversations: 200

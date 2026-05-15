@@ -3,6 +3,7 @@ import math
 import os
 import re
 from collections import Counter
+from difflib import SequenceMatcher
 from pathlib import Path
 from statistics import mean
 from typing import Any
@@ -11,9 +12,34 @@ import torch
 import torch.nn.functional as F
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from src.saferesponse_engine import logger
-from src.saferesponse_engine.entity.config_entity import VerificationConfig
-from src.saferesponse_engine.utils.common import load_json
+from saferesponse_engine import logger
+from saferesponse_engine.entity.config_entity import VerificationConfig
+from saferesponse_engine.utils.common import load_json
+
+
+LEXICAL_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "based", "by", "can",
+    "context", "did", "do", "does", "for", "from", "given", "has", "have",
+    "how", "i", "in", "information", "is", "it", "me", "of", "on", "or",
+    "provided", "question", "source", "sources", "that", "the", "this", "to",
+    "us", "was", "we", "were", "what", "who", "why", "with", "you",
+}
+
+ABSTENTION_PATTERNS = (
+    "i don't know",
+    "i do not know",
+    "cannot determine",
+    "cannot answer",
+    "cannot provide",
+    "does not contain",
+    "doesn't contain",
+    "do not contain",
+    "no mention",
+    "not mentioned",
+    "not provided",
+    "not sufficient",
+    "not enough information",
+)
 
 
 class VerificationLayer:
@@ -121,11 +147,189 @@ class VerificationLayer:
             vectors.append(vector)
         return vectors
 
+    @staticmethod
+    def _normalize_token(token: str) -> str:
+        if token.endswith("ies") and len(token) > 4:
+            return token[:-3] + "y"
+        if token.endswith("ing") and len(token) > 5:
+            return token[:-3]
+        if token.endswith("ed") and len(token) > 4:
+            return token[:-2]
+        if token.endswith("s") and len(token) > 3:
+            return token[:-1]
+        return token
+
+    @classmethod
+    def _support_terms(cls, text: str) -> set[str]:
+        return {
+            cls._normalize_token(token)
+            for token in re.findall(r"[a-z0-9]+", text.lower())
+            if token not in LEXICAL_STOPWORDS and len(token) > 1
+        }
+
+    @staticmethod
+    def _has_fuzzy_match(term: str, terms: set[str]) -> bool:
+        if len(term) < 5:
+            return False
+        for other in terms:
+            if abs(len(term) - len(other)) > 3:
+                continue
+            if SequenceMatcher(None, term, other).ratio() >= 0.82:
+                return True
+        return False
+
+    @classmethod
+    def _coverage(cls, required_terms: set[str], evidence_terms: set[str]) -> dict[str, Any]:
+        if not required_terms:
+            return {
+                "score": 0.0,
+                "matched_terms": [],
+                "missing_terms": [],
+            }
+
+        matched_terms = []
+        missing_terms = []
+        for term in sorted(required_terms):
+            if term in evidence_terms or cls._has_fuzzy_match(term, evidence_terms):
+                matched_terms.append(term)
+            else:
+                missing_terms.append(term)
+
+        return {
+            "score": len(matched_terms) / len(required_terms),
+            "matched_terms": matched_terms,
+            "missing_terms": missing_terms,
+        }
+
+    @staticmethod
+    def _is_abstention(candidate_text: str) -> bool:
+        normalized = re.sub(r"\s+", " ", candidate_text.lower()).strip()
+        return any(pattern in normalized for pattern in ABSTENTION_PATTERNS)
+
+    @staticmethod
+    def _is_live_fact_query(query: str) -> bool:
+        normalized = " ".join(re.findall(r"[a-z0-9]+", query.lower()))
+        if re.search(
+            r"\b(current|currently|latest|now|today|present|incumbent|"
+            r"right now|as of)\b",
+            normalized,
+        ):
+            return True
+
+        historical_markers = re.search(
+            r"\b(1st|2nd|3rd|[0-9]+th|former|past|served|in [0-9]{3,4}|"
+            r"during|between|from [0-9]{3,4})\b",
+            normalized,
+        )
+        live_role_question = re.search(
+            r"\bwho is the (president|ceo|chief executive|prime minister|"
+            r"governor|mayor|chair|director|leader|head)\b",
+            normalized,
+        )
+        return bool(live_role_question and historical_markers is None)
+
+    def _compute_lexical_grounding(
+        self,
+        query: str,
+        candidate_text: str,
+        chunks: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        answer_abstained = self._is_abstention(candidate_text)
+        live_fact_requested = self._is_live_fact_query(query)
+        query_terms = self._support_terms(query)
+        answer_terms = self._support_terms(candidate_text)
+
+        if answer_abstained:
+            return {
+                "score": 0.0,
+                "best_source": None,
+                "best_chunk_id": None,
+                "best_content_hash": None,
+                "features": {
+                    "answer_abstained": True,
+                    "unsupported_live_fact": live_fact_requested,
+                    "unsupported_claim": True,
+                    "answer_support_score": 0.0,
+                    "query_support_score": 0.0,
+                    "missing_answer_terms": [],
+                    "matched_answer_terms": [],
+                },
+            }
+
+        if not chunks:
+            return {
+                "score": 0.0,
+                "best_source": None,
+                "best_chunk_id": None,
+                "best_content_hash": None,
+                "features": {
+                    "answer_abstained": False,
+                    "unsupported_live_fact": live_fact_requested,
+                    "unsupported_claim": True,
+                    "answer_support_score": 0.0,
+                    "query_support_score": 0.0,
+                    "missing_answer_terms": sorted(answer_terms),
+                    "matched_answer_terms": [],
+                },
+            }
+
+        scored_chunks = []
+        for chunk in chunks:
+            chunk_terms = self._support_terms(chunk.get("content", ""))
+            answer_coverage = self._coverage(answer_terms, chunk_terms)
+            query_coverage = self._coverage(query_terms, chunk_terms)
+            support_score = (
+                0.72 * answer_coverage["score"]
+                + 0.28 * query_coverage["score"]
+            )
+            scored_chunks.append((
+                support_score,
+                answer_coverage,
+                query_coverage,
+                chunk,
+            ))
+
+        best_score, answer_coverage, query_coverage, best_chunk = max(
+            scored_chunks,
+            key=lambda item: item[0],
+        )
+        unsupported_claim = best_score < self.config.grounding_threshold
+        if live_fact_requested:
+            unsupported_claim = True
+            best_score = min(best_score, 0.0)
+
+        return {
+            "score": round(self._clip(best_score), 6),
+            "best_source": best_chunk.get("source"),
+            "best_chunk_id": best_chunk.get("chunk_id"),
+            "best_content_hash": best_chunk.get("content_hash"),
+            "features": {
+                "answer_abstained": False,
+                "unsupported_live_fact": live_fact_requested,
+                "unsupported_claim": unsupported_claim,
+                "answer_support_score": round(answer_coverage["score"], 6),
+                "query_support_score": round(query_coverage["score"], 6),
+                "missing_answer_terms": answer_coverage["missing_terms"][:20],
+                "matched_answer_terms": answer_coverage["matched_terms"][:20],
+            },
+        }
+
     def _compute_grounding_scores(
         self,
+        query: str,
         candidates: list[dict[str, Any]],
         chunks: list[dict[str, Any]],
     ) -> dict[int, dict[str, Any]]:
+        if self.embedding_backend in {"lexical", "lexical_fallback"}:
+            return {
+                candidate["response_id"]: self._compute_lexical_grounding(
+                    query=query,
+                    candidate_text=candidate.get("text", ""),
+                    chunks=chunks,
+                )
+                for candidate in candidates
+            }
+
         if not chunks:
             return {
                 candidate["response_id"]: {
@@ -133,6 +337,13 @@ class VerificationLayer:
                     "best_source": None,
                     "best_chunk_id": None,
                     "best_content_hash": None,
+                    "features": {
+                        "unsupported_claim": True,
+                        "unsupported_live_fact": self._is_live_fact_query(query),
+                        "answer_abstained": self._is_abstention(
+                            candidate.get("text", "")
+                        ),
+                    },
                 }
                 for candidate in candidates
             }
@@ -152,11 +363,20 @@ class VerificationLayer:
             best_index = max(range(len(similarities)), key=similarities.__getitem__)
             best_similarity = self._clip((similarities[best_index] + 1.0) / 2.0)
             best_chunk = chunks[best_index]
+            lexical_result = self._compute_lexical_grounding(
+                query=query,
+                candidate_text=candidate.get("text", ""),
+                chunks=[best_chunk],
+            )
             scores[candidate["response_id"]] = {
-                "score": round(best_similarity, 6),
+                "score": round(min(best_similarity, lexical_result["score"]), 6),
                 "best_source": best_chunk.get("source"),
                 "best_chunk_id": best_chunk.get("chunk_id"),
                 "best_content_hash": best_chunk.get("content_hash"),
+                "features": {
+                    **lexical_result.get("features", {}),
+                    "embedding_similarity": round(best_similarity, 6),
+                },
             }
         return scores
 
@@ -528,7 +748,7 @@ class VerificationLayer:
 
         grounding_scores = {}
         if self.config.enable_grounding_score:
-            grounding_scores = self._compute_grounding_scores(candidates, chunks)
+            grounding_scores = self._compute_grounding_scores(query, candidates, chunks)
 
         consistency_scores = {}
         if self.config.enable_consistency_score:
@@ -549,6 +769,7 @@ class VerificationLayer:
 
             grounding_result = grounding_scores.get(response_id, {})
             grounding_score = grounding_result.get("score")
+            grounding_features = grounding_result.get("features", {}) or {}
             consistency_result = consistency_scores.get(response_id, {})
             consistency_score = consistency_result.get("score")
             judge_score = self._compute_judge_score(
@@ -569,6 +790,15 @@ class VerificationLayer:
                     grounding_score is not None
                     and grounding_score < self.config.grounding_threshold
                 ),
+                "unsupported_claim": bool(
+                    grounding_features.get("unsupported_claim")
+                ),
+                "unsupported_live_fact": bool(
+                    grounding_features.get("unsupported_live_fact")
+                ),
+                "answer_abstained": bool(
+                    grounding_features.get("answer_abstained")
+                ),
                 "high_sample_divergence": (
                     consistency_score is not None
                     and consistency_score < self.config.consistency_threshold
@@ -587,6 +817,7 @@ class VerificationLayer:
                 "halluguard_score": halluguard_result["score"],
                 "halluguard_features": halluguard_result["features"],
                 "grounding_score": grounding_score,
+                "grounding_features": grounding_features,
                 "consistency_score": consistency_score,
                 "consistency_features": {
                     "embedding_consistency": consistency_result.get(

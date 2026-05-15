@@ -4,19 +4,18 @@ import logging
 
 logging_str = "[%(asctime)s: %(levelname)s: %(module)s: %(message)s]"
 
-log_dir = "logs"
-log_filepath = os.path.join(log_dir,"running_logs.log")
-os.makedirs(log_dir, exist_ok=True)
-
+handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+log_filepath = os.getenv("SAFE_RESPONSE_LOG_FILE", "").strip()
+if log_filepath:
+    log_dir = os.path.dirname(log_filepath)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+    handlers.append(logging.FileHandler(log_filepath))
 
 logging.basicConfig(
-    level= logging.INFO,
-    format= logging_str,
-
-    handlers=[
-        logging.FileHandler(log_filepath),
-        logging.StreamHandler(sys.stdout)
-    ]
+    level=logging.INFO,
+    format=logging_str,
+    handlers=handlers,
 )
 
 logger = logging.getLogger("SafeResponseEngine")

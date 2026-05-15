@@ -1,5 +1,0 @@
-{
-  "corpus": "wikipedia_20220301_en",
-  "embedding": "bge_m3_1024dim",
-  "num_articles": 15
-}

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SafeResponse Engine</title>
+    <link rel="stylesheet" href="/static/styles.css?v=4" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navigation">
+        <div class="sidebar-top">
+          <div class="sidebar-brand">
+            <span class="brand-mark" aria-hidden="true">S</span>
+            <span class="brand-copy">
+              <strong>SafeResponse</strong>
+              <span>Engine</span>
+            </span>
+          </div>
+
+          <button id="newChatButton" class="sidebar-action" type="button">
+            <span aria-hidden="true">+</span>
+            <span>New chat</span>
+          </button>
+        </div>
+
+        <nav class="chat-list" aria-label="Chats">
+          <div class="sidebar-section-title">
+            <p>Chats</p>
+            <span id="chatCount">0</span>
+          </div>
+          <div id="chatListItems" class="chat-list-items"></div>
+          <p id="emptyChats" class="empty-chats">No saved chats yet</p>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Local session</span>
+        </div>
+      </aside>
+
+      <main class="chat-shell">
+        <header class="chat-header">
+          <div>
+            <h1>SafeResponse Engine</h1>
+            <p id="chatSubtitle">Start a new verified chat</p>
+          </div>
+        </header>
+
+        <section class="conversation" aria-label="Conversation">
+          <div id="messages" class="messages" aria-live="polite">
+            <div id="emptyState" class="empty-state">
+              <div class="empty-mark" aria-hidden="true">S</div>
+              <h2>What can I help with?</h2>
+            </div>
+          </div>
+        </section>
+
+        <form id="chatForm" class="composer">
+          <div class="composer-inner">
+            <textarea
+              id="messageInput"
+              name="message"
+              rows="1"
+              placeholder="Message SafeResponse"
+              autocomplete="off"
+              required
+            ></textarea>
+            <button id="sendButton" type="submit" aria-label="Send message">
+              <span class="send-label">Send</span>
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      const form = document.getElementById("chatForm");
+      const input = document.getElementById("messageInput");
+      const messages = document.getElementById("messages");
+      const emptyState = document.getElementById("emptyState");
+      const sendButton = document.getElementById("sendButton");
+      const sendLabel = sendButton.querySelector(".send-label");
+      const newChatButton = document.getElementById("newChatButton");
+      const chatListItems = document.getElementById("chatListItems");
+      const emptyChats = document.getElementById("emptyChats");
+      const chatCount = document.getElementById("chatCount");
+      const chatSubtitle = document.getElementById("chatSubtitle");
+
+      let conversationId = localStorage.getItem("saferesponse_conversation_id");
+      let conversations = [];
+      let pollTimer = null;
+
+      function syncEmptyState() {
+        const hasMessages = messages.querySelector(".message-row");
+        emptyState.hidden = Boolean(hasMessages);
+      }
+
+      function trimText(text, maxLength) {
+        const compact = String(text || "").replace(/\s+/g, " ").trim();
+        if (compact.length <= maxLength) return compact;
+        return `${compact.slice(0, maxLength - 1).trim()}...`;
+      }
+
+      function formatTime(timestamp) {
+        if (!timestamp) return "";
+        const date = new Date(timestamp * 1000);
+        const today = new Date();
+        const sameDay = date.toDateString() === today.toDateString();
+        return new Intl.DateTimeFormat(undefined, {
+          hour: sameDay ? "numeric" : undefined,
+          minute: sameDay ? "2-digit" : undefined,
+          month: sameDay ? undefined : "short",
+          day: sameDay ? undefined : "numeric",
+        }).format(date);
+      }
+
+      function setSendState(label, disabled = false) {
+        sendButton.disabled = disabled;
+        sendLabel.textContent = label;
+      }
+
+      function clearMessages() {
+        messages.querySelectorAll(".message-row").forEach((node) => node.remove());
+        syncEmptyState();
+      }
+
+      function renderAssistantText(container, text) {
+        container.innerHTML = "";
+        const value = String(text || "").trim();
+        if (!value) return;
+
+        const blocks = value.split(/\n{2,}/);
+        blocks.forEach((block) => {
+          const lines = block.split("\n").filter((line) => line.trim());
+          const isList = lines.length > 1 && lines.every((line) => /^[-*]\s+/.test(line.trim()));
+          const isNumberedList =
+            lines.length > 1 && lines.every((line) => /^\d+\.\s+/.test(line.trim()));
+
+          if (isList || isNumberedList) {
+            const list = document.createElement(isNumberedList ? "ol" : "ul");
+            lines.forEach((line) => {
+              const item = document.createElement("li");
+              item.textContent = line.replace(/^([-*]|\d+\.)\s+/, "");
+              list.appendChild(item);
+            });
+            container.appendChild(list);
+            return;
+          }
+
+          const paragraph = document.createElement("p");
+          paragraph.textContent = block;
+          container.appendChild(paragraph);
+        });
+      }
+
+      function writeMessage(row, text) {
+        const bubble = row.querySelector(".message-bubble");
+        const role = row.classList.contains("assistant") ? "assistant" : "user";
+        if (role === "assistant") {
+          renderAssistantText(bubble, text);
+        } else {
+          bubble.textContent = text;
+        }
+        row.classList.remove("is-loading");
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function addMessage(role, text) {
+        const row = document.createElement("article");
+        row.className = `message-row ${role}`;
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = role === "user" ? "U" : "S";
+
+        const content = document.createElement("div");
+        content.className = "message-content";
+
+        const bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+        content.appendChild(bubble);
+        row.appendChild(avatar);
+        row.appendChild(content);
+        messages.appendChild(row);
+        writeMessage(row, text);
+        syncEmptyState();
+        return row;
+      }
+
+      async function requestJson(url, options = {}) {
+        const response = await fetch(url, options);
+        const rawBody = await response.text();
+        let data = {};
+        try {
+          data = rawBody ? JSON.parse(rawBody) : {};
+        } catch {
+          data = { detail: rawBody || "The server returned a non-JSON response." };
+        }
+        if (!response.ok) {
+          throw new Error(data.detail || "Request failed");
+        }
+        return data;
+      }
+
+      async function refreshConversations() {
+        try {
+          const data = await requestJson("/v1/conversations?limit=60");
+          conversations = data.conversations || [];
+        } catch {
+          conversations = [];
+        }
+        renderChatList();
+      }
+
+      function renderChatList() {
+        chatListItems.innerHTML = "";
+        chatCount.textContent = conversations.length;
+        emptyChats.hidden = conversations.length > 0;
+
+        conversations.forEach((chat) => {
+          const item = document.createElement("button");
+          item.className = "chat-list-item";
+          if (chat.conversation_id === conversationId) {
+            item.classList.add("is-active");
+          }
+          item.type = "button";
+          item.dataset.conversationId = chat.conversation_id;
+
+          const title = document.createElement("span");
+          title.className = "chat-title";
+          title.textContent = trimText(chat.title || "New chat", 44);
+
+          const meta = document.createElement("span");
+          meta.className = "chat-meta";
+          meta.textContent = trimText(chat.preview || formatTime(chat.updated_at), 54);
+
+          const time = document.createElement("span");
+          time.className = "chat-time";
+          time.textContent = formatTime(chat.updated_at);
+
+          item.appendChild(title);
+          item.appendChild(meta);
+          item.appendChild(time);
+          item.addEventListener("click", () => loadConversation(chat.conversation_id));
+          chatListItems.appendChild(item);
+        });
+      }
+
+      async function loadConversation(nextConversationId) {
+        try {
+          const conversation = await requestJson(
+            `/v1/conversations/${encodeURIComponent(nextConversationId)}`
+          );
+          conversationId = conversation.conversation_id;
+          localStorage.setItem("saferesponse_conversation_id", conversationId);
+          clearMessages();
+          conversation.turns.forEach((turn) => {
+            if (turn.role === "user" || turn.role === "assistant") {
+              addMessage(turn.role, turn.text || "");
+            }
+          });
+          chatSubtitle.textContent = "Saved chat";
+          renderChatList();
+        } catch (error) {
+          conversationId = null;
+          localStorage.removeItem("saferesponse_conversation_id");
+          clearMessages();
+          chatSubtitle.textContent = "Start a new verified chat";
+          renderChatList();
+        }
+      }
+
+      function waitForJob(jobId) {
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          pollTimer = window.setInterval(async () => {
+            attempts += 1;
+            setSendState(attempts % 2 === 0 ? "Running" : "Checking", true);
+            try {
+              const job = await requestJson(`/v1/chat/jobs/${jobId}`);
+              if (job.status === "completed") {
+                window.clearInterval(pollTimer);
+                pollTimer = null;
+                resolve(job.result);
+              }
+              if (job.status === "failed") {
+                window.clearInterval(pollTimer);
+                pollTimer = null;
+                reject(new Error(job.error || "Pipeline job failed"));
+              }
+            } catch (error) {
+              window.clearInterval(pollTimer);
+              pollTimer = null;
+              reject(error);
+            }
+          }, 1000);
+        });
+      }
+
+      function startNewChat() {
+        conversationId = null;
+        localStorage.removeItem("saferesponse_conversation_id");
+        clearMessages();
+        chatSubtitle.textContent = "Start a new verified chat";
+        renderChatList();
+        input.focus();
+      }
+
+      newChatButton.addEventListener("click", startNewChat);
+
+      input.addEventListener("input", () => {
+        input.style.height = "auto";
+        input.style.height = `${Math.min(input.scrollHeight, 180)}px`;
+      });
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessage("user", message);
+        input.value = "";
+        input.style.height = "auto";
+        const assistantRow = addMessage("assistant", "Thinking...");
+        assistantRow.classList.add("is-loading");
+        setSendState("Queued", true);
+
+        try {
+          const job = await requestJson("/v1/chat/jobs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              conversation_id: conversationId,
+              message,
+              run_pipeline: true,
+            }),
+          });
+          const data = await waitForJob(job.job_id);
+          if (data.conversation_id) {
+            conversationId = data.conversation_id;
+            localStorage.setItem("saferesponse_conversation_id", conversationId);
+          }
+          writeMessage(assistantRow, data.answer || "");
+          chatSubtitle.textContent = "Saved chat";
+          await refreshConversations();
+        } catch (error) {
+          writeMessage(assistantRow, error.message);
+        } finally {
+          if (pollTimer) {
+            window.clearInterval(pollTimer);
+            pollTimer = null;
+          }
+          setSendState("Send", false);
+          input.focus();
+        }
+      });
+
+      async function boot() {
+        await refreshConversations();
+        if (conversationId) {
+          await loadConversation(conversationId);
+        }
+        syncEmptyState();
+        input.focus();
+      }
+
+      boot();
+    </script>
+  </body>
+</html>

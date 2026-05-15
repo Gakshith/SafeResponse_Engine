@@ -1,5 +1,5 @@
-from src.saferesponse_engine.components.trace_collection_layer import TraceCollectionLayer
-from src.saferesponse_engine.config.configuration import ConfigurationManager
+from saferesponse_engine.components.trace_collection_layer import TraceCollectionLayer
+from saferesponse_engine.config.configuration import ConfigurationManager
 
 
 STAGE_NAME = "Trace_Collection_Layer_STAGE"

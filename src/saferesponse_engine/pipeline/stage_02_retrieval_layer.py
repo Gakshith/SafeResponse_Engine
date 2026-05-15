@@ -1,5 +1,5 @@
-from src.saferesponse_engine.config.configuration import ConfigurationManager
-from src.saferesponse_engine.components.retrieval_layer import RetrievalLayer
+from saferesponse_engine.config.configuration import ConfigurationManager
+from saferesponse_engine.components.retrieval_layer import RetrievalLayer
 
 
 STAGE_NAME = "Retrieval_Layer_STAGE"
