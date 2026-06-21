@@ -65,8 +65,8 @@ class RetrievalLayer:
             self.config.num_articles,
         )
         expected_metadata = {
-            "corpus":        "wikipedia_20220301_en",
-            "embedding":     "bge_m3_1024dim",
+            "corpus":        str(self.config.local_corpus_path),
+            "embedding":     self.config.embedding_model,
             "num_articles":  self.config.num_articles,
         }
 
@@ -90,9 +90,9 @@ class RetrievalLayer:
                 _VECTORSTORE_CACHE[cache_key] = vectorstore
                 return vectorstore
 
-        raw_docs = self._load_wikipedia_documents()
+        raw_docs = self._load_corpus_documents()
         if not raw_docs:
-            raise RuntimeError("Unable to build the Wikipedia retrieval corpus.")
+            raise RuntimeError("Unable to build the retrieval corpus.")
         chunks = self.splitter.split_documents(raw_docs)
         for chunk_id, chunk in enumerate(chunks):
             chunk.metadata["chunk_id"]     = chunk_id
