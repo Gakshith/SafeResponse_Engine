@@ -21,12 +21,12 @@ generation_layer:
   root_dir: artifacts/generation
   retrieval_artifact_path: artifacts/retrieval/retrieved_chunks.json
   generation_output_path: artifacts/generation/candidates.json
-  model_name: Qwen/Qwen2.5-0.5B-Instruct
+  model_name: Qwen/Qwen2.5-1.5B-Instruct
   finetuned_model_path: null
   num_candidates: 1
   primary_temperature: 0.0
   sample_temperature: 0.7
-  max_new_tokens: 48
+  max_new_tokens: 160
   max_context_length: 1024
 training:
   base_model_name: Qwen/Qwen2.5-0.5B-Instruct
@@ -47,7 +47,7 @@ trace_collection_layer:
   generation_artifact_path: artifacts/generation/candidates.json
   trace_output_path: artifacts/traces/traces.json
   hidden_states_dir: artifacts/traces/hidden_states
-  model_name: Qwen/Qwen2.5-0.5B-Instruct
+  model_name: Qwen/Qwen2.5-1.5B-Instruct
   finetuned_model_path: null
   max_context_length: 2048
   collect_hidden_states: false
@@ -68,7 +68,7 @@ verification_layer:
   enable_consistency_score: true
   enable_nli_consistency: false
   enable_judge: false
-  trace_model_name: Qwen/Qwen2.5-0.5B-Instruct
+  trace_model_name: Qwen/Qwen2.5-1.5B-Instruct
   nli_model_name: cross-encoder/nli-deberta-v3-small
   judge_model: gpt-4o-mini
   halluguard_threshold: 0.45
