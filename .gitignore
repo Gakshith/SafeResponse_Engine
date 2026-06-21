@@ -38,3 +38,12 @@ data/squad_v2/
 # Local secrets/config overrides
 .env
 .env.*
+
+# Worktrees (Superpowers workflow)
+.worktrees/
+
+# Ruflo / claude-flow runtime artifacts
+.claude-flow/
+.swarm/
+ruvector.db
+*.ruvector.db
