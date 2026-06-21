@@ -8,14 +8,14 @@ retrieval_layer:
   query_artifact_path: artifacts/user_query/data.txt
   faiss_index_path: artifacts/retrieval/faiss_index
   retrieval_output_path: artifacts/retrieval/retrieved_chunks.json
-  retrieval_backend: lexical
+  retrieval_backend: dense
   local_corpus_path: data/demo_corpus.json
-  embedding_model: BAAI/bge-m3
-  top_k: 3
+  embedding_model: BAAI/bge-small-en-v1.5
+  top_k: 4
   chunk_size: 500
   chunk_overlap: 100
-  num_articles: 10
-  min_score_threshold: 0.95
+  num_articles: 44
+  min_score_threshold: 0.65
   min_lexical_matches: 2
 generation_layer:
   root_dir: artifacts/generation
@@ -58,7 +58,7 @@ verification_layer:
   generation_artifact_path: artifacts/generation/candidates.json
   trace_artifact_path: artifacts/traces/traces.json
   verification_output_path: artifacts/verification/verification_scores.json
-  embedding_model: BAAI/bge-m3
+  embedding_model: BAAI/bge-small-en-v1.5
   embedding_backend: lexical
   enable_halluguard: true
   enable_ntk: false
