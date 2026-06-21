@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from saferesponse_engine import logger
 from saferesponse_engine.components.conversation_memory import (
     ConversationMemoryLayer,
 )
@@ -36,6 +37,39 @@ class SafeResponseChatEngine:
         self.memory = ConversationMemoryLayer(
             config=self.config_manager.get_conversation_memory_config()
         )
+        self._warm = False
+
+    def warmup(self) -> bool:
+        """
+        Pre-load the generation model and (for dense retrieval) the FAISS index so
+        the first user query does not pay the cold-load cost. Best-effort: never
+        raises — logs a warning and leaves the engine cold if loading fails (e.g.
+        model not yet downloaded in offline mode).
+        """
+        try:
+            from saferesponse_engine.components.generation_layer import GenerationLayer
+
+            generation_layer = GenerationLayer(
+                self.config_manager.get_generation_layer_config()
+            )
+            generation_layer._ensure_model()
+
+            retrieval_config = self.config_manager.get_retrieval_layer_config()
+            if str(retrieval_config.retrieval_backend).lower() == "dense":
+                from saferesponse_engine.components.retrieval_layer import RetrievalLayer
+
+                RetrievalLayer(retrieval_config).build_index()
+
+            self._warm = True
+            logger.info("[Engine] Warmup complete; model and index are ready.")
+        except Exception:
+            self._warm = False
+            logger.warning(
+                "[Engine] Warmup skipped; model/index not preloaded. "
+                "First query will load on demand.",
+                exc_info=True,
+            )
+        return self._warm
 
     @staticmethod
     def _plain(value: Any) -> Any:
@@ -383,6 +417,7 @@ class SafeResponseChatEngine:
         final_output_path = self.final_output_path()
         return {
             "status": "ok",
+            "warm": self._warm,
             "pipeline_busy": PIPELINE_LOCK.locked(),
             "final_output_exists": final_output_path.exists(),
             "final_output_path": str(final_output_path),

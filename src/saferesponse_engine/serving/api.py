@@ -161,6 +161,19 @@ def _engine() -> SafeResponseChatEngine:
         return ENGINE
 
 
+@app.on_event("startup")
+def _warmup_on_startup() -> None:
+    # Warm the model + retrieval index in a background thread so the first user
+    # query is fast without blocking server startup. Best-effort (never fatal).
+    def _warm() -> None:
+        try:
+            _engine().warmup()
+        except Exception:
+            logger.warning("[Serving] Background warmup failed.", exc_info=True)
+
+    threading.Thread(target=_warm, name="saferesponse-warmup", daemon=True).start()
+
+
 def _prune_jobs(now: float | None = None) -> None:
     STATE_STORE.prune_jobs(
         max_jobs=MAX_JOBS,
