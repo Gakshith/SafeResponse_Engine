@@ -203,10 +203,11 @@ class GenerationLayer:
                 max_new_tokens=self.config.max_new_tokens,
                 temperature=max(temperature, 1e-7),
                 do_sample=temperature > 0,
+                repetition_penalty=1.1,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
                 stopping_criteria=stopping_criteria,
-                use_cache=False,
+                use_cache=True,
             )
 
         # decode only the newly generated tokens
