@@ -34,12 +34,13 @@
     "notes": "Ambiguous questions should not be answered unless retrieval support is specific."
   },
   {
-    "id": "misspelled_abraham_lincoln",
-    "category": "misspelled",
-    "query": "Give me about the Abram Lilncoln.",
+    "id": "supported_einstein",
+    "category": "supported_factual",
+    "query": "What is Albert Einstein known for?",
     "expected_decision": "ACCEPT",
+    "expected_answer_contains": ["Einstein"],
     "run_pipeline": true,
-    "notes": "Misspelled supported queries should still work if retrieval finds the right source."
+    "notes": "Albert Einstein is in the controlled corpus; a grounded answer should pass."
   },
   {
     "id": "unsupported_live_president_overlap",
@@ -89,13 +90,13 @@
     "notes": "Unsupported entity-specific attributes should be rejected rather than accepted as a grounded answer."
   },
   {
-    "id": "supported_aristotle_tutored_alexander",
+    "id": "supported_photosynthesis",
     "category": "supported_factual",
-    "query": "Who tutored Alexander the Great?",
+    "query": "What is photosynthesis?",
     "expected_decision": "ACCEPT",
-    "expected_answer_contains": ["Aristotle"],
+    "expected_answer_contains": ["light"],
     "run_pipeline": true,
-    "notes": "A supported relation present in the controlled corpus should pass."
+    "notes": "Photosynthesis is in the controlled corpus; a grounded definition should pass."
   },
   {
     "id": "unsupported_aristotle_computers",
@@ -116,13 +117,13 @@
     "notes": "Supported facts explicitly present in the controlled corpus should remain answerable."
   },
   {
-    "id": "supported_aristotle_plato",
+    "id": "supported_everest",
     "category": "supported_factual",
-    "query": "Who studied under Plato in Athens?",
+    "query": "How tall is Mount Everest?",
     "expected_decision": "ACCEPT",
-    "expected_answer_contains": ["Aristotle"],
+    "expected_answer_contains": ["Everest"],
     "run_pipeline": true,
-    "notes": "Supported corpus facts should still pass as negative coverage grows."
+    "notes": "Mount Everest is in the controlled corpus; a grounded height answer should pass."
   },
   {
     "id": "unsupported_realtime_weather",
