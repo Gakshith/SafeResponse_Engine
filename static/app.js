@@ -3,41 +3,6 @@
    Vanilla JS, no build step, no external deps.
    ========================================================= */
 
-/* ── Theme management ───────────────────────────────────── */
-(function initTheme() {
-  const stored = localStorage.getItem("sre_theme");
-  const preferred = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-  const theme = stored || preferred;
-  if (theme === "light") {
-    document.documentElement.dataset.theme = "light";
-  }
-})();
-
-function toggleTheme() {
-  const root = document.documentElement;
-  const next = root.dataset.theme === "light" ? "dark" : "light";
-  if (next === "dark") {
-    delete root.dataset.theme;
-  } else {
-    root.dataset.theme = "light";
-  }
-  localStorage.setItem("sre_theme", next);
-  updateThemeIcons();
-}
-
-function updateThemeIcons() {
-  const isDark = document.documentElement.dataset.theme !== "light";
-  const icon = isDark ? "☀️" : "🌙";
-  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
-  document.querySelectorAll(".theme-toggle-icon, .header-theme-icon").forEach((el) => {
-    el.textContent = icon;
-  });
-  document.querySelectorAll(".header-theme-btn, .theme-toggle").forEach((el) => {
-    el.setAttribute("aria-label", label);
-    el.title = label;
-  });
-}
-
 /* ── DOM refs ───────────────────────────────────────────── */
 const form          = document.getElementById("chatForm");
 const input         = document.getElementById("messageInput");
@@ -211,7 +176,7 @@ function buildVerdictBlock(data) {
     card.className = "source-card";
     card.setAttribute("aria-label", `Source: ${data.source}`);
     card.innerHTML = `
-      <span class="source-icon" aria-hidden="true">📄</span>
+      <span class="source-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg></span>
       <div>
         <span class="source-label">Source</span>
         <span class="source-text">${escapeHtml(data.source)}</span>
@@ -538,10 +503,6 @@ function startNewChat() {
 /* ── Event listeners ────────────────────────────────────── */
 newChatButton.addEventListener("click", startNewChat);
 
-document.querySelectorAll(".header-theme-btn, .theme-toggle").forEach((btn) => {
-  btn.addEventListener("click", toggleTheme);
-});
-
 input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = `${Math.min(input.scrollHeight, 180)}px`;
@@ -620,7 +581,6 @@ form.addEventListener("submit", async (e) => {
 
 /* ── Boot ───────────────────────────────────────────────── */
 async function boot() {
-  updateThemeIcons();
   await refreshConversations();
   if (conversationId) await loadConversation(conversationId);
   syncEmptyState();
