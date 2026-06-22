@@ -77,8 +77,8 @@ class GenerationLayer:
                     f"{memory_block}"
                     f"Document context:\n{context}\n\n"
                     f"Question: {user_query}\n\n"
-                    "Answer in 2 to 3 complete sentences using only the document "
-                    "context. Be specific and factual."
+                    "Answer in 1 to 2 complete sentences using only the document "
+                    "context. Be specific and factual, and finish your last sentence."
                 ),
             },
         ]
