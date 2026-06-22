@@ -72,7 +72,7 @@ verification_layer:
   nli_model_name: cross-encoder/nli-deberta-v3-small
   judge_model: gpt-4o-mini
   halluguard_threshold: 0.45
-  grounding_threshold: 0.7
+  grounding_threshold: 0.45
   consistency_threshold: 0.7
 fusion_router:
   root_dir: artifacts/fusion
