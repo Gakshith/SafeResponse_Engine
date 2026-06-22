@@ -1,39 +1,53 @@
 # SafeResponse Engine
 
-SafeResponse Engine is an LLM safety middleware prototype. By default it wraps
-retrieval, candidate generation, trace collection, verification, routing, and
-final response formatting around a pretrained instruction model so unsupported
-answers can be rejected before they reach the user. It also includes an optional
-LoRA fine-tuning workflow for improving the generation style on grounded
-question-answer examples.
+SafeResponse Engine is an LLM **"hallucination firewall"** — a retrieval-augmented safety
+middleware that wraps retrieval, generation, internal-signal verification, and a decision
+router around an instruction model so **unsupported answers are rejected before they reach the
+user**. Supported questions are answered with a cited source and a confidence; out-of-corpus or
+ungrounded answers are rejected. An optional LoRA fine-tuning workflow is included.
 
-## Pipeline
+## Architecture
+
+- **Generator:** `Qwen/Qwen2.5-1.5B-Instruct` (runs locally on Apple-Silicon MPS).
+- **Retrieval:** dense **FAISS** over a curated **44-article** local corpus
+  (`data/demo_corpus.json`), embedded with `BAAI/bge-small-en-v1.5`; a lexical backend is kept
+  as a fallback.
+- **Verification signals:** logprob (HalluGuard), grounding (answer↔context similarity), and
+  consistency. Per-token log-probs are **captured during generation** and reused by the trace
+  stage (no second forward pass).
+- **Decision router:** weighted fusion of the signals → ACCEPT / RERANK / REWRITE / REJECT, with
+  grounding-derived hard rejects gated on the grounding weight (so signals can be ablated
+  independently).
+- **Serving:** FastAPI API + a **verdict-first** web UI (ChatGPT-style monochrome, light) that
+  surfaces the decision, confidence, source, risk signals, and per-stage timings. The model and
+  FAISS index are warmed at startup.
 
 ```mermaid
 flowchart TD
-    A["Stage 1: User Query"] --> B["Stage 2: Retrieval + Context"]
-    B --> C["Stage 3: Candidate Generation"]
-    C --> D["Stage 4: Trace Collection"]
-    D --> E["Stage 5: Multi-Signal Verification"]
+    A["Stage 1: User Query"] --> B["Stage 2: Retrieval (dense FAISS, bge-small)"]
+    B -->|"no grounded chunk"| G
+    B --> C["Stage 3: Generation (Qwen2.5-1.5B, logprobs captured)"]
+    C --> D["Stage 4: Trace (reuses generation logprobs)"]
+    D --> E["Stage 5: Verification (logprob · grounding · consistency)"]
     E --> F["Stage 6: Fusion + Decision Router"]
-    F -->|"ACCEPT or RERANK"| G["Stage 7: Final Output"]
+    F -->|"ACCEPT / RERANK"| G["Stage 7: Final Output (answer + verdict)"]
     F -->|"REWRITE"| B
     F -->|"REJECT"| G
-    G --> H["Stage 8: API, UI, Evaluation, Deployment"]
+    G --> H["Stage 8: API · verdict-first UI · evaluation · ablation"]
 ```
 
 Implemented stages:
 
-| Stage | Status | Main Files |
+| Stage | Notes | Main Files |
 |---|---|---|
-| 1. User Query | Implemented | `components/user_query.py`, `pipeline/stage_01_user_query.py` |
-| 2. Retrieval | Implemented | `components/retrieval_layer.py`, `pipeline/stage_02_retrieval_layer.py` |
-| 3. Generation | Implemented | `components/generation_layer.py`, `pipeline/stage_03_generation_layer.py` |
-| 4. Trace Collection | Implemented | `components/trace_collection_layer.py`, `pipeline/stage_04_trace_collection_layer.py` |
-| 5. Verification | Implemented, needs calibration | `components/verification_layer.py`, `pipeline/stage_05_verification_layer.py` |
-| 6. Fusion Router | Implemented | `components/fusion_decision_router.py`, `pipeline/stage_06_fusion_decision_router.py` |
-| 7. Final Output | Implemented | `components/final_output.py`, `pipeline/stage_07_final_output.py` |
-| 8. API/UI/Evaluation | Implemented for demo | `serving/api.py`, `templates/index.html`, `scripts/run_evaluation.py` |
+| 1. User Query | Live-fact query guard | `components/user_query.py`, `pipeline/stage_01_user_query.py` |
+| 2. Retrieval | Dense FAISS (bge-small) over 44-article corpus, cached index | `components/retrieval_layer.py` |
+| 3. Generation | Qwen2.5-1.5B, KV-cache, captures per-token logprobs | `components/generation_layer.py` |
+| 4. Trace Collection | Reuses generation logprobs (no extra forward pass) | `components/trace_collection_layer.py`, `components/trace_stats.py` |
+| 5. Verification | Calibrated logprob / grounding / consistency signals | `components/verification_layer.py` |
+| 6. Fusion Router | Weighted fusion; grounding hard-rejects gated on weight | `components/fusion_decision_router.py` |
+| 7. Final Output | Answer + decision + confidence + source + timings | `components/final_output.py` |
+| 8. API/UI/Eval | FastAPI + verdict-first UI + ablation harness | `serving/api.py`, `templates/index.html`, `static/app.js`, `scripts/run_ablation.py` |
 
 ## Setup
 
