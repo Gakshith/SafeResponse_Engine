@@ -33,37 +33,29 @@ DEFAULT_EXAMPLES = PROJECT_ROOT / "evaluation" / "examples.json"
 ACCEPT_DECISIONS = {"ACCEPT", "RERANK"}
 
 
-def build_configs() -> dict[str, dict[str, bool]]:
-    """Named verification flag-sets to compare.
+def build_configs() -> dict[str, dict[str, float]]:
+    """Named fusion-weight sets that isolate each verification signal.
 
-    Each maps the three demo signals (logprob via halluguard, grounding,
-    consistency). ``all_off`` is the no-verification baseline.
+    Verification stays fully enabled, so every signal score AND the supporting
+    source are always computed. The ablation varies which signal drives the
+    fusion decision by zeroing the other weights. This isolates a signal's true
+    contribution instead of failing closed when grounding is removed.
     """
+    zero = {
+        "weight_halluguard": 0.0,
+        "weight_grounding": 0.0,
+        "weight_consistency": 0.0,
+        "weight_judge": 0.0,
+    }
     return {
-        "all_off": {
-            "enable_halluguard": False,
-            "enable_grounding_score": False,
-            "enable_consistency_score": False,
-        },
-        "logprob_only": {
-            "enable_halluguard": True,
-            "enable_grounding_score": False,
-            "enable_consistency_score": False,
-        },
-        "grounding_only": {
-            "enable_halluguard": False,
-            "enable_grounding_score": True,
-            "enable_consistency_score": False,
-        },
-        "consistency_only": {
-            "enable_halluguard": False,
-            "enable_grounding_score": False,
-            "enable_consistency_score": True,
-        },
+        "logprob_only": {**zero, "weight_halluguard": 1.0},
+        "grounding_only": {**zero, "weight_grounding": 1.0},
+        "consistency_only": {**zero, "weight_consistency": 1.0},
         "all_on": {
-            "enable_halluguard": True,
-            "enable_grounding_score": True,
-            "enable_consistency_score": True,
+            "weight_halluguard": 0.35,
+            "weight_grounding": 0.30,
+            "weight_consistency": 0.20,
+            "weight_judge": 0.15,
         },
     }
 
@@ -89,12 +81,20 @@ def decided_accept(decision: str) -> bool:
 
 
 @contextmanager
-def patched_verification_flags(flags: dict[str, bool]):
-    """Temporarily set verification_layer.enable_* flags in config.yaml."""
+def patched_fusion_weights(weights: dict[str, float]):
+    """Temporarily set fusion_router.weight_* in config.yaml (verification stays on)."""
     original_text = CONFIG_PATH.read_text(encoding="utf-8")
     try:
         data = yaml.safe_load(original_text)
-        data["verification_layer"].update(flags)
+        data["fusion_router"].update(weights)
+        # Keep all verification signals enabled so every score + the supporting
+        # source are computed regardless of which signal drives the decision.
+        for flag in (
+            "enable_halluguard",
+            "enable_grounding_score",
+            "enable_consistency_score",
+        ):
+            data["verification_layer"][flag] = True
         CONFIG_PATH.write_text(
             yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
             encoding="utf-8",
@@ -104,14 +104,14 @@ def patched_verification_flags(flags: dict[str, bool]):
         CONFIG_PATH.write_text(original_text, encoding="utf-8")
 
 
-def _run_config(name: str, flags: dict[str, bool], examples: list[dict[str, Any]]) -> dict[str, Any]:
+def _run_config(name: str, weights: dict[str, float], examples: list[dict[str, Any]]) -> dict[str, Any]:
     from saferesponse_engine.components.ablation_metrics import confusion
     from saferesponse_engine.components.chat_engine import SafeResponseChatEngine
 
     records: list[tuple[bool, bool]] = []
     per_example: list[dict[str, Any]] = []
     started = time.perf_counter()
-    with patched_verification_flags(flags):
+    with patched_fusion_weights(weights):
         engine = SafeResponseChatEngine()
         for example in examples:
             expected_supported = classify_example(example)
@@ -130,7 +130,7 @@ def _run_config(name: str, flags: dict[str, bool], examples: list[dict[str, Any]
             })
     metrics = confusion(records)
     metrics["latency_seconds"] = round(time.perf_counter() - started, 3)
-    return {"config": name, "flags": flags, "metrics": metrics, "examples": per_example}
+    return {"config": name, "weights": weights, "metrics": metrics, "examples": per_example}
 
 
 def _print_table(results: list[dict[str, Any]]) -> None:
@@ -169,7 +169,7 @@ def main() -> None:
         print(f"{n} hallucination examples would run across {len(configs)} configs.")
         return
 
-    results = [_run_config(name, flags, examples) for name, flags in configs.items()]
+    results = [_run_config(name, weights, examples) for name, weights in configs.items()]
     _print_table(results)
 
     output_path = Path(args.output)

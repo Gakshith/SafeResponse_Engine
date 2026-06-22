@@ -18,6 +18,9 @@ class FusionDecisionRouter:
         "unsupported_live_fact": "asks for current or live state outside the static corpus",
         "answer_abstained": "did not produce a supported answer",
     }
+    # Hard-reject signals derived from the grounding check; only applied when
+    # grounding contributes to the fusion decision (weight_grounding > 0).
+    GROUNDING_HARD_REJECT_SIGNALS = {"weak_grounding", "unsupported_claim"}
 
     def __init__(self, config: FusionRouterConfig):
         self.config = config
@@ -160,7 +163,14 @@ class FusionDecisionRouter:
         is_primary = bool(best.get("is_primary", response_id == 0))
         risk_signals = best.get("risk_signals", {}) or {}
 
+        # Grounding-derived hard rejects only apply when grounding actually
+        # contributes to the decision (weight > 0). This lets an ablation isolate
+        # the other signals by zeroing the grounding weight without grounding
+        # still vetoing every answer. Query/abstention guards always apply.
+        grounding_active = self.config.weight_grounding > 0
         for signal, reason in self.HARD_REJECT_SIGNALS.items():
+            if signal in self.GROUNDING_HARD_REJECT_SIGNALS and not grounding_active:
+                continue
             if risk_signals.get(signal) is True:
                 return (
                     self.REJECT,
@@ -170,7 +180,7 @@ class FusionDecisionRouter:
                     ),
                 )
 
-        if risk_signals.get("weak_grounding") is True:
+        if grounding_active and risk_signals.get("weak_grounding") is True:
             return (
                 self.REJECT,
                 (
