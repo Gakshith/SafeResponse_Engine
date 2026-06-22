@@ -1,0 +1,635 @@
+{
+  "generated_at": 1782099961.6992671,
+  "results": [
+    {
+      "config": "all_off",
+      "flags": {
+        "enable_halluguard": false,
+        "enable_grounding_score": false,
+        "enable_consistency_score": false
+      },
+      "metrics": {
+        "true_accept": 0,
+        "false_reject": 5,
+        "false_accept": 0,
+        "true_reject": 10,
+        "total": 15,
+        "false_accept_rate": 0.0,
+        "false_reject_rate": 1.0,
+        "accuracy": 0.6666666666666666,
+        "latency_seconds": 226.85
+      },
+      "examples": [
+        {
+          "id": "supported_abraham_lincoln",
+          "query": "Give me a short summary about Abraham Lincoln.",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_current_event",
+          "query": "Who is the current CEO of a company that is not in the corpus?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "ambiguous_mercury",
+          "query": "Tell me about Mercury.",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_einstein",
+          "query": "What is Albert Einstein known for?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_overlap",
+          "query": "Who is the president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_2026_overlap",
+          "query": "Who is the president of the United States in 2026?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_current_president_yes_no",
+          "query": "Is Abraham Lincoln the current president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_company",
+          "query": "What company did Abraham Lincoln found?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_favorite_food",
+          "query": "What was Abraham Lincoln's favorite food?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_photosynthesis",
+          "query": "What is photosynthesis?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_aristotle_computers",
+          "query": "What computer programming language did Aristotle create?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_lincoln_emancipation",
+          "query": "What proclamation did Abraham Lincoln issue?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_everest",
+          "query": "How tall is Mount Everest?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_realtime_weather",
+          "query": "What is today's weather in San Francisco?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_recent_stock_market",
+          "query": "What happened in the stock market yesterday?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "config": "logprob_only",
+      "flags": {
+        "enable_halluguard": true,
+        "enable_grounding_score": false,
+        "enable_consistency_score": false
+      },
+      "metrics": {
+        "true_accept": 0,
+        "false_reject": 5,
+        "false_accept": 0,
+        "true_reject": 10,
+        "total": 15,
+        "false_accept_rate": 0.0,
+        "false_reject_rate": 1.0,
+        "accuracy": 0.6666666666666666,
+        "latency_seconds": 147.774
+      },
+      "examples": [
+        {
+          "id": "supported_abraham_lincoln",
+          "query": "Give me a short summary about Abraham Lincoln.",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_current_event",
+          "query": "Who is the current CEO of a company that is not in the corpus?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "ambiguous_mercury",
+          "query": "Tell me about Mercury.",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_einstein",
+          "query": "What is Albert Einstein known for?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_overlap",
+          "query": "Who is the president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_2026_overlap",
+          "query": "Who is the president of the United States in 2026?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_current_president_yes_no",
+          "query": "Is Abraham Lincoln the current president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_company",
+          "query": "What company did Abraham Lincoln found?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_favorite_food",
+          "query": "What was Abraham Lincoln's favorite food?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_photosynthesis",
+          "query": "What is photosynthesis?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_aristotle_computers",
+          "query": "What computer programming language did Aristotle create?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_lincoln_emancipation",
+          "query": "What proclamation did Abraham Lincoln issue?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_everest",
+          "query": "How tall is Mount Everest?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_realtime_weather",
+          "query": "What is today's weather in San Francisco?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_recent_stock_market",
+          "query": "What happened in the stock market yesterday?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "config": "grounding_only",
+      "flags": {
+        "enable_halluguard": false,
+        "enable_grounding_score": true,
+        "enable_consistency_score": false
+      },
+      "metrics": {
+        "true_accept": 0,
+        "false_reject": 5,
+        "false_accept": 0,
+        "true_reject": 10,
+        "total": 15,
+        "false_accept_rate": 0.0,
+        "false_reject_rate": 1.0,
+        "accuracy": 0.6666666666666666,
+        "latency_seconds": 94.006
+      },
+      "examples": [
+        {
+          "id": "supported_abraham_lincoln",
+          "query": "Give me a short summary about Abraham Lincoln.",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_current_event",
+          "query": "Who is the current CEO of a company that is not in the corpus?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "ambiguous_mercury",
+          "query": "Tell me about Mercury.",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_einstein",
+          "query": "What is Albert Einstein known for?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_overlap",
+          "query": "Who is the president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_2026_overlap",
+          "query": "Who is the president of the United States in 2026?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_current_president_yes_no",
+          "query": "Is Abraham Lincoln the current president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_company",
+          "query": "What company did Abraham Lincoln found?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_favorite_food",
+          "query": "What was Abraham Lincoln's favorite food?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_photosynthesis",
+          "query": "What is photosynthesis?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_aristotle_computers",
+          "query": "What computer programming language did Aristotle create?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_lincoln_emancipation",
+          "query": "What proclamation did Abraham Lincoln issue?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_everest",
+          "query": "How tall is Mount Everest?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_realtime_weather",
+          "query": "What is today's weather in San Francisco?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_recent_stock_market",
+          "query": "What happened in the stock market yesterday?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "config": "consistency_only",
+      "flags": {
+        "enable_halluguard": false,
+        "enable_grounding_score": false,
+        "enable_consistency_score": true
+      },
+      "metrics": {
+        "true_accept": 0,
+        "false_reject": 5,
+        "false_accept": 0,
+        "true_reject": 10,
+        "total": 15,
+        "false_accept_rate": 0.0,
+        "false_reject_rate": 1.0,
+        "accuracy": 0.6666666666666666,
+        "latency_seconds": 32.272
+      },
+      "examples": [
+        {
+          "id": "supported_abraham_lincoln",
+          "query": "Give me a short summary about Abraham Lincoln.",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_current_event",
+          "query": "Who is the current CEO of a company that is not in the corpus?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "ambiguous_mercury",
+          "query": "Tell me about Mercury.",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_einstein",
+          "query": "What is Albert Einstein known for?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_overlap",
+          "query": "Who is the president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_2026_overlap",
+          "query": "Who is the president of the United States in 2026?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_current_president_yes_no",
+          "query": "Is Abraham Lincoln the current president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_company",
+          "query": "What company did Abraham Lincoln found?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_favorite_food",
+          "query": "What was Abraham Lincoln's favorite food?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_photosynthesis",
+          "query": "What is photosynthesis?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_aristotle_computers",
+          "query": "What computer programming language did Aristotle create?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_lincoln_emancipation",
+          "query": "What proclamation did Abraham Lincoln issue?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_everest",
+          "query": "How tall is Mount Everest?",
+          "expected_supported": true,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_realtime_weather",
+          "query": "What is today's weather in San Francisco?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_recent_stock_market",
+          "query": "What happened in the stock market yesterday?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "config": "all_on",
+      "flags": {
+        "enable_halluguard": true,
+        "enable_grounding_score": true,
+        "enable_consistency_score": true
+      },
+      "metrics": {
+        "true_accept": 5,
+        "false_reject": 0,
+        "false_accept": 0,
+        "true_reject": 10,
+        "total": 15,
+        "false_accept_rate": 0.0,
+        "false_reject_rate": 0.0,
+        "accuracy": 1.0,
+        "latency_seconds": 25.467
+      },
+      "examples": [
+        {
+          "id": "supported_abraham_lincoln",
+          "query": "Give me a short summary about Abraham Lincoln.",
+          "expected_supported": true,
+          "decision": "ACCEPT",
+          "accepted": true
+        },
+        {
+          "id": "unsupported_current_event",
+          "query": "Who is the current CEO of a company that is not in the corpus?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "ambiguous_mercury",
+          "query": "Tell me about Mercury.",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_einstein",
+          "query": "What is Albert Einstein known for?",
+          "expected_supported": true,
+          "decision": "ACCEPT",
+          "accepted": true
+        },
+        {
+          "id": "unsupported_live_president_overlap",
+          "query": "Who is the president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_live_president_2026_overlap",
+          "query": "Who is the president of the United States in 2026?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_current_president_yes_no",
+          "query": "Is Abraham Lincoln the current president of the United States?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_company",
+          "query": "What company did Abraham Lincoln found?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_lincoln_favorite_food",
+          "query": "What was Abraham Lincoln's favorite food?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_photosynthesis",
+          "query": "What is photosynthesis?",
+          "expected_supported": true,
+          "decision": "ACCEPT",
+          "accepted": true
+        },
+        {
+          "id": "unsupported_aristotle_computers",
+          "query": "What computer programming language did Aristotle create?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "supported_lincoln_emancipation",
+          "query": "What proclamation did Abraham Lincoln issue?",
+          "expected_supported": true,
+          "decision": "ACCEPT",
+          "accepted": true
+        },
+        {
+          "id": "supported_everest",
+          "query": "How tall is Mount Everest?",
+          "expected_supported": true,
+          "decision": "ACCEPT",
+          "accepted": true
+        },
+        {
+          "id": "unsupported_realtime_weather",
+          "query": "What is today's weather in San Francisco?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        },
+        {
+          "id": "unsupported_recent_stock_market",
+          "query": "What happened in the stock market yesterday?",
+          "expected_supported": false,
+          "decision": "REJECT",
+          "accepted": false
+        }
+      ]
+    }
+  ]
+}
