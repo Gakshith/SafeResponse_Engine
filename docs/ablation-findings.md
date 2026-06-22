@@ -45,10 +45,37 @@ So with a well-behaved model that abstains appropriately, the elaborate internal
 a model that **confidently hallucinates** instead of abstaining — which this eval set does not
 contain.
 
-## Next step to actually differentiate the signals
+## Stress test: suppress abstention (the differentiating experiment)
 
-To measure what each signal catches, force the generator to **always answer** (suppress the
-abstention instruction) so confident, ungrounded answers are produced, then re-run the ablation.
-Under that stress test the signals must do the discriminating, and the per-signal FAR/FRR should
-diverge — yielding the "grounding catches X%, logprob catches Y%" comparison. That is the natural
-follow-up experiment.
+To measure what each signal actually catches, we add a `force_answer` mode that forbids the
+model from abstaining, so it produces confident answers even when the context does not support
+them. Re-running the ablation under this mode (`scripts/run_ablation.py --force-answer`,
+report: `docs/ablation-report-forceanswer.json`) makes the signals do the discriminating:
+
+| config | FAR | FRR | accuracy |
+|---|---|---|---|
+| logprob_only | **0.100** | 0.000 | 0.933 |
+| grounding_only | **0.000** | 0.000 | 1.000 |
+| consistency_only | **0.100** | 0.000 | 0.933 |
+| all_on | **0.000** | 0.000 | 1.000 |
+
+The signals now diverge. The separating case is the in-corpus entity-overlap trap **"What
+company did Abraham Lincoln found?"**: forced to answer, the model **confidently fabricates** a
+company.
+
+- **logprob_only → ACCEPT** (false accept): the model is confident, so its token
+  log-probabilities look normal — logprob cannot detect a fluent, confident hallucination.
+- **consistency_only → ACCEPT** (false accept): with a single sample there is nothing to
+  disagree with; consistency needs multiple samples to contribute.
+- **grounding_only → REJECT** (correct): the fabricated answer does not match the retrieved
+  Lincoln passage, so the answer↔context similarity is low.
+- **all_on → REJECT** (correct).
+
+### Conclusion
+
+**Grounding (answer↔context similarity) is the signal that actually catches confident
+hallucinations.** Logprob and single-sample consistency do not — a fluent model is fluent
+whether it is right or wrong, and one sample cannot vote against itself. This is the core,
+honest contribution: the verification value comes from grounding against retrieved evidence, not
+from the model's own confidence. Future work: multi-sample consistency (num_candidates > 1) to
+give the consistency signal a fair test, and a larger adversarial eval set.

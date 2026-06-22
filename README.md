@@ -250,13 +250,25 @@ measured in isolation without the system failing closed (see `docs/ablation-find
 Results are written to `artifacts/ablation-report.json` (committed copy at
 `docs/ablation-report.json`).
 
-**Honest finding:** on the current eval set every isolated signal scores FAR=0 / FRR=0 / acc=1.0
-— not because each signal is independently strong, but because **retrieval gating** (out-of-corpus
-queries return no chunk) and **model abstention** (the instruction-tuned model says "I cannot
-provide a reliable answer" on in-corpus entity-overlap traps) do the separating *before* the
-statistical signals matter. The signals would earn their keep against a model that confidently
-hallucinates instead of abstaining; the natural follow-up is to suppress abstention and re-run
-the ablation so the signals must do the discriminating. Full discussion: `docs/ablation-findings.md`.
+**Finding (default mode):** with abstention enabled, every isolated signal scores
+FAR=0/FRR=0/acc=1.0 — not because each signal is strong, but because **retrieval gating** and
+**model abstention** separate the eval set before the statistical signals matter.
+
+**Finding (stress test, `--force-answer`):** suppressing abstention forces the model to answer
+even when context does not support it, and the signals finally diverge:
+
+| config | FAR | FRR | accuracy |
+|---|---|---:|---|
+| logprob_only | 0.100 | 0.000 | 0.933 |
+| grounding_only | 0.000 | 0.000 | 1.000 |
+| consistency_only | 0.100 | 0.000 | 0.933 |
+| all_on | 0.000 | 0.000 | 1.000 |
+
+On the trap "What company did Abraham Lincoln found?" the model confidently fabricates a company:
+**logprob** and single-sample **consistency** accept it (a fluent model looks confident whether
+right or wrong), while **grounding** rejects it because the answer does not match the retrieved
+text. **Grounding against retrieved evidence is the signal that catches confident hallucinations.**
+Full discussion: `docs/ablation-findings.md`.
 
 ## Web UI
 
