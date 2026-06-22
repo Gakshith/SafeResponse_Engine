@@ -37,13 +37,18 @@ Implemented stages:
 
 ## Setup
 
-Use the project virtual environment:
+Use the project virtual environment. **Python 3.12 is required** (newer interpreters such as
+3.14 do not yet have torch/faiss wheels). On Apple Silicon the model runs on the MPS backend.
 
 ```bash
-python3 -m venv venv
+python3.12 -m venv venv
 venv/bin/python -m pip install --upgrade pip
 venv/bin/python -m pip install -r requirements.txt
 ```
+
+Model weights load **offline by default**. For the first run, allow downloads with
+`SAFE_RESPONSE_ALLOW_MODEL_DOWNLOADS=1` (Qwen2.5-1.5B-Instruct ≈ 3 GB, `BAAI/bge-small-en-v1.5`
+≈ 130 MB).
 
 Run tests:
 
@@ -71,7 +76,7 @@ http://127.0.0.1:8000
 
 ## Fine-Tuning
 
-The base model is `Qwen/Qwen2.5-0.5B-Instruct`. Fine-tuning is optional and uses
+The generation model is `Qwen/Qwen2.5-1.5B-Instruct`. Fine-tuning is optional and uses
 a small LoRA adapter instead of rewriting the whole base model.
 
 Validate the configured training file:
@@ -213,25 +218,50 @@ reproducible demo path.
 
 ## Controlled Corpus
 
-The default config uses a small controlled Wikipedia corpus:
+The default config uses a curated, controlled Wikipedia corpus (44 articles across history,
+science, geography, technology, sports, and the arts) with **dense FAISS retrieval**:
 
 ```yaml
 retrieval_layer:
-  num_articles: 10
-  retrieval_backend: lexical
-  min_score_threshold: 0.95
-  min_lexical_matches: 2
+  num_articles: 44
+  retrieval_backend: dense
+  embedding_model: BAAI/bge-small-en-v1.5
+  min_score_threshold: 0.65
 ```
 
-This is intentional for demos. Questions supported by the controlled corpus
-should be answered. Questions outside the corpus should be rejected quickly
+The corpus lives in `data/demo_corpus.json` and is committed for offline reproducibility;
+regenerate it with `venv/bin/python scripts/build_demo_corpus.py`. Questions supported by the
+corpus are answered with a source and confidence; questions outside it are rejected quickly
 without running generation when no sufficiently grounded chunks are found.
+
+## Ablation / Research Results
+
+The core research question — *does the verification layer actually reduce hallucinations?* — is
+measured by an ablation that runs the evaluation set with verification fully OFF, fully ON, and
+each signal in isolation, reporting false-accept rate (FAR), false-reject rate (FRR), and
+accuracy:
+
+```bash
+SAFE_RESPONSE_ALLOW_MODEL_DOWNLOADS=1 venv/bin/python scripts/run_ablation.py
+```
+
+Results are written to `artifacts/ablation-report.json` (a committed copy lives at
+`docs/ablation-report.json`). The engine is **safe-by-default / fail-closed**: the grounding
+signal establishes the supporting source required to accept, so disabling verification does not
+make the system permissive — it makes it reject. With all signals on and calibrated, grounded
+in-corpus answers are accepted while every out-of-corpus query is rejected (FAR = 0).
+
+## Web UI
+
+The browser UI (`/`) is verdict-first: every answer shows the decision (ACCEPT / REVIEW /
+REJECT), a confidence meter, the source citation, a per-signal risk breakdown, and live
+8-stage pipeline progress while a query runs. It supports light and dark themes.
 
 ## Limitations
 
 - This is a safety middleware prototype, not a production hallucination detector.
-- The default retrieval corpus is intentionally small.
-- Verification thresholds still need broader calibration.
+- The retrieval corpus is intentionally controlled (44 curated articles).
+- Verification thresholds are calibrated on a small evaluation set; broader calibration is future work.
 - Logprob, grounding, and consistency are the core demo signals.
 - NTK, Jacobian, and spectral conditioning code paths are experimental unless
   they are enabled, benchmarked, and documented for a specific run.
