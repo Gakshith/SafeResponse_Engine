@@ -12,6 +12,7 @@ from saferesponse_engine.components.model_runtime import (
     resolve_model_source,
     select_runtime,
 )
+from saferesponse_engine.components.trace_stats import summarize_logprobs
 from saferesponse_engine.entity.config_entity import TraceCollectionConfig
 from saferesponse_engine.utils.common import load_json
 
@@ -123,6 +124,39 @@ class TraceCollectionLayer:
                 "num_tokens_prompt": 0,
                 "trace_skipped": True,
                 "skip_reason": "context_guard",
+            }
+
+        # Fast path: generation already captured per-token log-probs. Reuse them
+        # instead of running a second forward pass over prompt+answer (unless
+        # hidden states are explicitly requested).
+        precomputed_logprobs = candidate.get("logprobs")
+        if precomputed_logprobs is not None and not self.config.collect_hidden_states:
+            stats = summarize_logprobs(precomputed_logprobs)
+            tokens = candidate.get("tokens", [])
+            logger.info(
+                "[Stage 4] Reusing generation log-probs for candidate %s "
+                "(no extra forward pass) | tokens=%s | mean_logprob=%.4f",
+                response_id,
+                len(tokens),
+                stats["mean_logprob"],
+            )
+            return {
+                "response_id": response_id,
+                "text": candidate_text,
+                "is_primary": is_primary,
+                "temperature": temperature,
+                "tokens": tokens,
+                "logprobs": list(precomputed_logprobs),
+                "mean_logprob": stats["mean_logprob"],
+                "min_logprob": stats["min_logprob"],
+                "sequence_score": stats["sequence_score"],
+                "hidden_states_path": None,
+                "num_layers": 0,
+                "hidden_dim": 0,
+                "num_tokens": len(tokens) or len(precomputed_logprobs),
+                "num_tokens_prompt": candidate.get("num_tokens_prompt", 0),
+                "trace_skipped": True,
+                "skip_reason": "reused_generation_logprobs",
             }
 
         self._ensure_model()
@@ -251,10 +285,17 @@ class TraceCollectionLayer:
         candidates = generation_data["candidates"]
 
         logger.info("[Stage 4] Collecting traces for %s candidates", len(candidates))
-        needs_model_trace = any(
-            candidate.get("requires_model_trace", True)
-            for candidate in candidates
-        )
+
+        def _needs_forward_pass(candidate: dict[str, Any]) -> bool:
+            if not candidate.get("requires_model_trace", True):
+                return False
+            if self.config.collect_hidden_states:
+                return True
+            # A forward pass is only needed when generation did not already
+            # capture the log-probs for this candidate.
+            return candidate.get("logprobs") is None
+
+        needs_model_trace = any(_needs_forward_pass(candidate) for candidate in candidates)
         if needs_model_trace:
             self._ensure_model()
             prompt = self._build_prompt(
