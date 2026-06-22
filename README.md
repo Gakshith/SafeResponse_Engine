@@ -236,20 +236,27 @@ without running generation when no sufficiently grounded chunks are found.
 
 ## Ablation / Research Results
 
-The core research question — *does the verification layer actually reduce hallucinations?* — is
-measured by an ablation that runs the evaluation set with verification fully OFF, fully ON, and
-each signal in isolation, reporting false-accept rate (FAR), false-reject rate (FRR), and
-accuracy:
+The core research question — *which internal signals actually catch hallucinations?* — is
+measured by an ablation that isolates each verification signal (logprob / grounding /
+consistency) and compares it to all-signals-combined, reporting false-accept rate (FAR),
+false-reject rate (FRR), and accuracy:
 
 ```bash
 SAFE_RESPONSE_ALLOW_MODEL_DOWNLOADS=1 venv/bin/python scripts/run_ablation.py
 ```
 
-Results are written to `artifacts/ablation-report.json` (a committed copy lives at
-`docs/ablation-report.json`). The engine is **safe-by-default / fail-closed**: the grounding
-signal establishes the supporting source required to accept, so disabling verification does not
-make the system permissive — it makes it reject. With all signals on and calibrated, grounded
-in-corpus answers are accepted while every out-of-corpus query is rejected (FAR = 0).
+The harness keeps verification fully enabled and varies the **fusion weights** so each signal is
+measured in isolation without the system failing closed (see `docs/ablation-findings.md`).
+Results are written to `artifacts/ablation-report.json` (committed copy at
+`docs/ablation-report.json`).
+
+**Honest finding:** on the current eval set every isolated signal scores FAR=0 / FRR=0 / acc=1.0
+— not because each signal is independently strong, but because **retrieval gating** (out-of-corpus
+queries return no chunk) and **model abstention** (the instruction-tuned model says "I cannot
+provide a reliable answer" on in-corpus entity-overlap traps) do the separating *before* the
+statistical signals matter. The signals would earn their keep against a model that confidently
+hallucinates instead of abstaining; the natural follow-up is to suppress abstention and re-run
+the ablation so the signals must do the discriminating. Full discussion: `docs/ablation-findings.md`.
 
 ## Web UI
 

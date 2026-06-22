@@ -1,10 +1,12 @@
 """Verification ablation harness for SafeResponse Engine.
 
-Runs the evaluation set under several verification configurations — verification
-fully OFF, fully ON, and each signal in isolation — and reports the safety
-metrics (false-accept rate, false-reject rate, accuracy) for each. This is the
-core research artifact: it shows whether the verification layer actually reduces
-hallucinations, and which signals contribute.
+Runs the evaluation set with each verification signal isolated (logprob-only,
+grounding-only, consistency-only) and with all signals combined, reporting the
+safety metrics (false-accept rate, false-reject rate, accuracy) for each.
+Verification stays fully enabled; the harness varies the fusion *weights* so a
+signal's individual contribution is measured cleanly (the system no longer fails
+closed when grounding is removed). This is the core research artifact: it shows
+which internal signals actually catch hallucinations.
 
 Usage:
     venv/bin/python scripts/run_ablation.py                 # full run (loads model)
