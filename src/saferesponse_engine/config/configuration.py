@@ -83,6 +83,7 @@ class ConfigurationManager:
             sample_temperature=float(config.sample_temperature),
             max_new_tokens=int(config.max_new_tokens),
             max_context_length=int(config.max_context_length),
+            force_answer=bool(config.get("force_answer", False)),
         )
 
     def get_trace_collection_config(self) -> TraceCollectionConfig:

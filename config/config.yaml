@@ -28,6 +28,10 @@ generation_layer:
   sample_temperature: 0.7
   max_new_tokens: 48
   max_context_length: 1024
+  # When true, the model is told to always answer (no abstention). Used by the
+  # ablation stress test to force confident answers so the verification signals
+  # must catch ungrounded ones. Keep false for normal safe operation.
+  force_answer: false
 training:
   base_model_name: Qwen/Qwen2.5-0.5B-Instruct
   train_file: data/squad_v2/finetune_train.jsonl

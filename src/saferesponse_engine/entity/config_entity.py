@@ -38,6 +38,7 @@ class GenerationConfig:
     sample_temperature: float
     max_new_tokens: int
     max_context_length: int
+    force_answer: bool = False
 
 
 @dataclass(frozen=True)

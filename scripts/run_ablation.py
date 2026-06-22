@@ -83,12 +83,17 @@ def decided_accept(decision: str) -> bool:
 
 
 @contextmanager
-def patched_fusion_weights(weights: dict[str, float]):
-    """Temporarily set fusion_router.weight_* in config.yaml (verification stays on)."""
+def patched_fusion_weights(weights: dict[str, float], force_answer: bool = False):
+    """Temporarily set fusion_router.weight_* in config.yaml (verification stays on).
+
+    When ``force_answer`` is set, the generator is told to never abstain, so the
+    verification signals must catch confidently-wrong answers (the stress test).
+    """
     original_text = CONFIG_PATH.read_text(encoding="utf-8")
     try:
         data = yaml.safe_load(original_text)
         data["fusion_router"].update(weights)
+        data["generation_layer"]["force_answer"] = force_answer
         # Keep all verification signals enabled so every score + the supporting
         # source are computed regardless of which signal drives the decision.
         for flag in (
@@ -106,14 +111,19 @@ def patched_fusion_weights(weights: dict[str, float]):
         CONFIG_PATH.write_text(original_text, encoding="utf-8")
 
 
-def _run_config(name: str, weights: dict[str, float], examples: list[dict[str, Any]]) -> dict[str, Any]:
+def _run_config(
+    name: str,
+    weights: dict[str, float],
+    examples: list[dict[str, Any]],
+    force_answer: bool = False,
+) -> dict[str, Any]:
     from saferesponse_engine.components.ablation_metrics import confusion
     from saferesponse_engine.components.chat_engine import SafeResponseChatEngine
 
     records: list[tuple[bool, bool]] = []
     per_example: list[dict[str, Any]] = []
     started = time.perf_counter()
-    with patched_fusion_weights(weights):
+    with patched_fusion_weights(weights, force_answer=force_answer):
         engine = SafeResponseChatEngine()
         for example in examples:
             expected_supported = classify_example(example)
@@ -160,6 +170,11 @@ def main() -> None:
         action="store_true",
         help="Validate configs without loading the model (for tests/CI).",
     )
+    parser.add_argument(
+        "--force-answer",
+        action="store_true",
+        help="Stress test: forbid abstention so the signals must catch hallucinations.",
+    )
     args = parser.parse_args()
 
     configs = build_configs()
@@ -171,12 +186,21 @@ def main() -> None:
         print(f"{n} hallucination examples would run across {len(configs)} configs.")
         return
 
-    results = [_run_config(name, weights, examples) for name, weights in configs.items()]
+    if args.force_answer:
+        print("[stress test] force_answer=ON — abstention suppressed.\n")
+    results = [
+        _run_config(name, weights, examples, force_answer=args.force_answer)
+        for name, weights in configs.items()
+    ]
     _print_table(results)
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    report = {"generated_at": time.time(), "results": results}
+    report = {
+        "generated_at": time.time(),
+        "force_answer": args.force_answer,
+        "results": results,
+    }
     output_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nReport written to {output_path}")
 

@@ -59,28 +59,33 @@ class GenerationLayer:
             if memory_context.strip()
             else ""
         )
+        if self.config.force_answer:
+            # Ablation stress-test mode: forbid abstention so the model produces a
+            # confident answer even when the context does not support it, forcing
+            # the verification signals to be what catches hallucinations.
+            system_content = (
+                "You are a factual assistant. Use the provided document context to "
+                "answer the question directly. Always give a definite answer; never "
+                "refuse and never say you do not know. Keep it concise."
+            )
+        else:
+            system_content = (
+                "You are a factual assistant. Answer only from the provided "
+                "document context and conversation memory. If both are empty, "
+                "unrelated, or do not contain the answer, reply exactly: "
+                "\"I don't know based on the provided context.\" Write a clear, "
+                "grounded answer. Do not add details that are not stated in the context."
+            )
+        user_content = (
+            f"{memory_block}"
+            f"Document context:\n{context}\n\n"
+            f"Question: {user_query}\n\n"
+            "Answer in 1 to 2 complete sentences using only the document "
+            "context. Be specific and factual, and finish your last sentence."
+        )
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are a factual assistant. Answer only from the provided "
-                    "document context and conversation memory. If both are empty, "
-                    "unrelated, or do not contain the answer, reply exactly: "
-                    "\"I don't know based on the provided context.\" Keep the "
-                    "answer concise. Do not add background, explanations, or "
-                    "details that are not explicitly stated in the context."
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"{memory_block}"
-                    f"Document context:\n{context}\n\n"
-                    f"Question: {user_query}\n\n"
-                    "Answer in 1 to 2 complete sentences using only the document "
-                    "context. Be specific and factual, and finish your last sentence."
-                ),
-            },
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": user_content},
         ]
         if hasattr(self.tokenizer, "apply_chat_template") and self.tokenizer.chat_template:
             return self.tokenizer.apply_chat_template(
@@ -88,18 +93,7 @@ class GenerationLayer:
                 tokenize=False,
                 add_generation_prompt=True,
             )
-        return (
-            "System: You are a factual assistant. Answer only from the provided "
-            "document context and conversation memory. If both are empty, unrelated, "
-            "or do not contain the answer, reply exactly: \"I don't know based on "
-            "the provided context.\" Keep the answer concise. Do not add background, "
-            "explanations, or details that are not explicitly stated in the "
-            "context.\n\n"
-            f"User: {memory_block}"
-            f"Document context:\n{context}\n\n"
-            f"Question: {user_query}\n\n"
-            "Answer in one short sentence, 40 words or fewer.\nAssistant:"
-        )
+        return f"System: {system_content}\n\nUser: {user_content}\nAssistant:"
 
     @staticmethod
     def _stop_strings() -> list[str]:
