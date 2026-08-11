@@ -47,3 +47,6 @@ data/squad_v2/
 .swarm/
 ruvector.db
 *.ruvector.db
+
+# docs live in ../../Documentation/ — reached through the docs symlink
+docs
