@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from transformers.generation.stopping_criteria import StoppingCriteria, StoppingCriteriaList
 
 from saferesponse_engine import logger
 from saferesponse_engine.components.model_runtime import (
@@ -12,9 +13,23 @@ from saferesponse_engine.components.model_runtime import (
     resolve_model_source,
     select_runtime,
 )
-from saferesponse_engine.components.trace_stats import summarize_logprobs
 from saferesponse_engine.entity.config_entity import GenerationConfig
 from saferesponse_engine.utils.common import load_json
+
+
+class StopOnSubstrings(StoppingCriteria):
+    def __init__(self, tokenizer, stop_strings: list[str], prompt_length: int):
+        self.tokenizer = tokenizer
+        self.stop_strings = stop_strings
+        self.prompt_length = prompt_length
+
+    def __call__(self, input_ids, scores, **kwargs) -> bool:
+        generated_ids = input_ids[0][self.prompt_length:]
+        generated_text = self.tokenizer.decode(
+            generated_ids,
+            skip_special_tokens=True,
+        )
+        return any(stop_string in generated_text for stop_string in self.stop_strings)
 
 
 class GenerationLayer:
@@ -59,33 +74,27 @@ class GenerationLayer:
             if memory_context.strip()
             else ""
         )
-        if self.config.force_answer:
-            # Ablation stress-test mode: forbid abstention so the model produces a
-            # confident answer even when the context does not support it, forcing
-            # the verification signals to be what catches hallucinations.
-            system_content = (
-                "You are a factual assistant. Use the provided document context to "
-                "answer the question directly. Always give a definite answer; never "
-                "refuse and never say you do not know. Keep it concise."
-            )
-        else:
-            system_content = (
-                "You are a factual assistant. Answer only from the provided "
-                "document context and conversation memory. If both are empty, "
-                "unrelated, or do not contain the answer, reply exactly: "
-                "\"I don't know based on the provided context.\" Write a clear, "
-                "grounded answer. Do not add details that are not stated in the context."
-            )
-        user_content = (
-            f"{memory_block}"
-            f"Document context:\n{context}\n\n"
-            f"Question: {user_query}\n\n"
-            "Answer in 1 to 2 complete sentences using only the document "
-            "context. Be specific and factual, and finish your last sentence."
-        )
         messages = [
-            {"role": "system", "content": system_content},
-            {"role": "user", "content": user_content},
+            {
+                "role": "system",
+                "content": (
+                    "You are a factual assistant. Answer only from the provided "
+                    "document context and conversation memory. If both are empty, "
+                    "unrelated, or do not contain the answer, reply exactly: "
+                    "\"I don't know based on the provided context.\" Keep the "
+                    "answer concise. Do not add background, explanations, or "
+                    "details that are not explicitly stated in the context."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"{memory_block}"
+                    f"Document context:\n{context}\n\n"
+                    f"Question: {user_query}\n\n"
+                    "Answer in one short sentence, 40 words or fewer."
+                ),
+            },
         ]
         if hasattr(self.tokenizer, "apply_chat_template") and self.tokenizer.chat_template:
             return self.tokenizer.apply_chat_template(
@@ -93,7 +102,18 @@ class GenerationLayer:
                 tokenize=False,
                 add_generation_prompt=True,
             )
-        return f"System: {system_content}\n\nUser: {user_content}\nAssistant:"
+        return (
+            "System: You are a factual assistant. Answer only from the provided "
+            "document context and conversation memory. If both are empty, unrelated, "
+            "or do not contain the answer, reply exactly: \"I don't know based on "
+            "the provided context.\" Keep the answer concise. Do not add background, "
+            "explanations, or details that are not explicitly stated in the "
+            "context.\n\n"
+            f"User: {memory_block}"
+            f"Document context:\n{context}\n\n"
+            f"Question: {user_query}\n\n"
+            "Answer in one short sentence, 40 words or fewer.\nAssistant:"
+        )
 
     @staticmethod
     def _stop_strings() -> list[str]:
@@ -168,9 +188,17 @@ class GenerationLayer:
             max_length=self.config.max_context_length
         )
         inputs = {key: value.to(self.device) for key, value in inputs.items()}
+        prompt_length = inputs["input_ids"].shape[1]
+        stopping_criteria = StoppingCriteriaList([
+            StopOnSubstrings(
+                tokenizer=self.tokenizer,
+                stop_strings=self._stop_strings(),
+                prompt_length=prompt_length,
+            )
+        ])
 
         with torch.inference_mode():
-            generation = self.model.generate(
+            output_ids = self.model.generate(
                 **inputs,
                 max_new_tokens=self.config.max_new_tokens,
                 temperature=max(temperature, 1e-7),
@@ -178,14 +206,10 @@ class GenerationLayer:
                 repetition_penalty=1.1,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                stop_strings=self._stop_strings(),
-                tokenizer=self.tokenizer,
+                stopping_criteria=stopping_criteria,
                 use_cache=True,
-                return_dict_in_generate=True,
-                output_logits=True,
             )
 
-        output_ids = generation.sequences
         # decode only the newly generated tokens
         input_len = inputs["input_ids"].shape[1]
         response_ids = output_ids[0][input_len:]
@@ -194,17 +218,6 @@ class GenerationLayer:
             skip_special_tokens=True
         )
         response_text = self._clean_response(response_text)
-
-        # Capture per-token log-probs from the raw generation logits so the trace
-        # stage does not need a second forward pass over prompt+answer.
-        logprobs: list[float] = []
-        step_tokens: list[str] = []
-        for step, step_logits in enumerate(generation.logits):
-            token_id = output_ids[0][input_len + step]
-            log_prob = torch.log_softmax(step_logits[0].float(), dim=-1)[token_id].item()
-            logprobs.append(round(log_prob, 6))
-            step_tokens.append(self.tokenizer.decode([token_id]))
-        stats = summarize_logprobs(logprobs)
 
         logger.info(
             "[Stage 3] Candidate %s generated (%s tokens)",
@@ -217,11 +230,6 @@ class GenerationLayer:
             "is_primary": is_primary,
             "temperature": temperature,
             "num_tokens": len(response_ids),
-            "tokens": step_tokens,
-            "logprobs": logprobs,
-            "mean_logprob": stats["mean_logprob"],
-            "min_logprob": stats["min_logprob"],
-            "sequence_score": stats["sequence_score"],
             "requires_model_trace": True,
         }
 

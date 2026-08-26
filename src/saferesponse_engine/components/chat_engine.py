@@ -54,26 +54,6 @@ class SafeResponseChatEngine:
             )
             generation_layer._ensure_model()
 
-            # Run a tiny generation so the MPS/CUDA generate kernels are compiled
-            # before the first real query (otherwise the first answer pays a
-            # one-time kernel-compilation cost of several seconds).
-            try:
-                import torch
-
-                warm_inputs = generation_layer.tokenizer(
-                    "Warmup.", return_tensors="pt"
-                ).to(generation_layer.device)
-                with torch.inference_mode():
-                    generation_layer.model.generate(
-                        **warm_inputs,
-                        max_new_tokens=4,
-                        do_sample=False,
-                        pad_token_id=generation_layer.tokenizer.pad_token_id,
-                        use_cache=True,
-                    )
-            except Exception:
-                logger.warning("[Engine] Generation kernel warmup skipped.", exc_info=True)
-
             retrieval_config = self.config_manager.get_retrieval_layer_config()
             if str(retrieval_config.retrieval_backend).lower() == "dense":
                 from saferesponse_engine.components.retrieval_layer import RetrievalLayer
